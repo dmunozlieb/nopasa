@@ -66,7 +66,7 @@ ACTIVE | RESOLVED | CANCELLED
 | `id`              | `id`                         | `string` (uuid)           | required |
 | `tipo`            | `type`                       | `DeadlineType`            | required |
 | `titulo`          | `title`                      | `string`                  | required, non-empty |
-| `subtitulo`       | `subtitle`                   | `string`                  | required (may be empty string) |
+| `subtitulo`       | `subtitle?`                  | `string`                  | optional |
 | `fechaClave`      | `dueDate`                    | `Date`                    | the key date: expiry / renewal / charge |
 | `importe?`        | `amount?`                    | `number`                  | optional |
 | `etiquetaImporte?`| `amountLabel?`               | `string`                  | optional (e.g. "fine", "monthly fee", "annual") |
@@ -145,19 +145,23 @@ export const UPCOMING_MAX_DAYS = 60; // upcoming if daysRemaining <= 60
 
 ### 4.4 `groupAndSort(list, today)`
 
-Groups deadlines into three named buckets, each sorted by `daysRemaining` ascending (most
+Groups deadlines into three buckets, each sorted by `daysRemaining` ascending (most
 urgent first), excluding `RESOLVED` and `CANCELLED`.
 
+The domain holds **no presentation text** — groups are identified by stable,
+language-agnostic keys. Translating each key to a Spanish label ("Requieren atención",
+"Próximas", "Tranquilas") is the responsibility of the UI/i18n layer in a later session, so
+the core stays language-agnostic.
+
 ```ts
-export const GROUPS = {
-  NEEDS_ATTENTION: 'Needs attention', // urgencyLevel === 'urgent'
-  UPCOMING: 'Upcoming',               // urgencyLevel === 'upcoming'
-  CALM: 'Calm',                       // urgencyLevel === 'calm'
-} as const;
+export type DeadlineGroup = 'NEEDS_ATTENTION' | 'UPCOMING' | 'CALM';
+// NEEDS_ATTENTION <- urgencyLevel === 'urgent'
+// UPCOMING        <- urgencyLevel === 'upcoming'
+// CALM            <- urgencyLevel === 'calm'
 ```
 
-Returns a structure with the three groups (each an ordered array). Items with status
-`RESOLVED` or `CANCELLED` are excluded entirely before grouping.
+`groupAndSort` returns the three groups identified by these keys (each an ordered array).
+Items with status `RESOLVED` or `CANCELLED` are excluded entirely before grouping.
 
 ---
 
@@ -214,12 +218,14 @@ domain does not depend on storage.
 export interface DeadlineRepository {
   save(deadline: Deadline): Promise<void>;
   list(): Promise<Deadline[]>;
+  findById(id: string): Promise<Deadline | null>;
   update(deadline: Deadline): Promise<void>;
   delete(id: string): Promise<void>;
 }
 ```
 
-(Spec's `guardar / listar / borrar / actualizar` → `save / list / delete / update`.)
+(Spec's `guardar / listar / borrar / actualizar` → `save / list / delete / update`;
+`findById` added for future single-record lookups.)
 
 ---
 
