@@ -32,12 +32,23 @@ describe('daysBetween', () => {
   });
 
   // Spain DST 2026: spring-forward on Sun 29 Mar (23h day), fall-back on Sun 25 Oct (25h day).
-  // Pinned to TZ=Europe/Madrid via the test script, so a naive ms/86_400_000 would drift here.
+  // Pinned to TZ=Europe/Madrid via the test script. These midnight-to-midnight cases catch a
+  // floor/truncation-based naive count (floor(47h/24h) = 1, not 2).
   it('counts exact calendar days across the spring-forward DST change', () => {
     expect(daysBetween(new Date(2026, 2, 28), new Date(2026, 2, 30))).toBe(2);
   });
 
   it('counts exact calendar days across the fall-back DST change', () => {
     expect(daysBetween(new Date(2026, 9, 24), new Date(2026, 9, 26))).toBe(2);
+  });
+
+  // Harder DST guard: different times-of-day on each side, spanning the spring-forward change.
+  // Calendar-day distance is 2, but only 69 real hours elapse (70h minus the lost hour), so a
+  // naive Math.round((to - from) / 86_400_000) drifts to round(2.875) = 3. The component-based,
+  // time-of-day-ignoring implementation stays at 2.
+  it('ignores time-of-day even when the span crosses a DST change', () => {
+    const from = new Date(2026, 2, 28, 1, 0, 0);
+    const to = new Date(2026, 2, 30, 23, 0, 0);
+    expect(daysBetween(from, to)).toBe(2);
   });
 });
