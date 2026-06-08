@@ -1,0 +1,46 @@
+import { useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { colors, fontSizes, spacing } from '../theme';
+import { AppText } from '../components/AppText';
+import { DeadlineList } from '../components/DeadlineList';
+import { EmptyState } from '../components/EmptyState';
+import { Loading } from '../components/Loading';
+import { useDeadlines } from '../hooks/use-deadlines';
+
+interface HomeScreenProps {
+  onOpenDeadline: (id: string) => void;
+  onAdd: () => void;
+}
+
+/** Home container: loads deadlines, refreshes on focus, picks loading/error/empty/list. */
+export function HomeScreen({ onOpenDeadline, onAdd }: HomeScreenProps) {
+  const { status, groups, refresh } = useDeadlines();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
+  if (status === 'loading') return <Loading />;
+
+  if (status === 'error') {
+    return (
+      <View style={styles.error}>
+        <AppText weight="bold" size={fontSizes.body} color={colors.textSecondary}>
+          No se pudieron cargar tus vencimientos.
+        </AppText>
+      </View>
+    );
+  }
+
+  const total = groups.NEEDS_ATTENTION.length + groups.UPCOMING.length + groups.CALM.length;
+  if (total === 0) return <EmptyState onAdd={onAdd} />;
+
+  return <DeadlineList groups={groups} today={new Date()} onPressRow={onOpenDeadline} onAdd={onAdd} />;
+}
+
+const styles = StyleSheet.create({
+  error: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.screenBg },
+});
