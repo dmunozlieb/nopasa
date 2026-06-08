@@ -21,8 +21,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "nopasa",
     "plugins": [
-      "expo-sqlite"
+      "expo-router",
+      "expo-sqlite",
+      "expo-font"
     ]
   }
 }

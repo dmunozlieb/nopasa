@@ -1,17 +1,27 @@
 {
   "name": "nopasa",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo/vector-icons": "^15.0.2",
     "expo": "~56.0.9",
+    "expo-constants": "~56.0.17",
     "expo-crypto": "~56.0.4",
+    "expo-font": "~56.0.5",
+    "expo-linking": "~56.0.13",
+    "expo-router": "~56.2.9",
     "expo-sqlite": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "^0.85.3",
+    "@testing-library/react-native": "^14.0.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^56.0.14",
@@ -34,7 +44,8 @@
       "<rootDir>/src"
     ],
     "testMatch": [
-      "**/*.test.ts"
+      "**/*.test.ts",
+      "**/*.test.tsx"
     ]
   },
   "private": true
