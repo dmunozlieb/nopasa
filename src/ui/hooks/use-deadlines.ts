@@ -8,6 +8,7 @@ export type DeadlinesStatus = 'loading' | 'ready' | 'error';
 export interface UseDeadlinesResult {
   status: DeadlinesStatus;
   groups: GroupedDeadlines;
+  today: Date;
   error: unknown;
   refresh: () => Promise<void>;
 }
@@ -43,5 +44,5 @@ export function useDeadlines(): UseDeadlinesResult {
     [status, list, today],
   );
 
-  return { status, groups, error, refresh };
+  return { status, groups, today, error, refresh };
 }

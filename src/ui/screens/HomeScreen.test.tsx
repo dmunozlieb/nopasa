@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 // HomeScreen uses expo-router's useFocusEffect; stub it to run once on mount so the
 // test needs only the RepositoryProvider, not a navigation container.
@@ -49,5 +49,41 @@ describe('HomeScreen (integration)', () => {
       </RepositoryProvider>,
     );
     await waitFor(() => expect(screen.getByText('Aquí no se te pasará nada')).toBeTruthy());
+  });
+
+  it('shows an error then recovers on retry', async () => {
+    // shouldFail controls whether list() throws. Both the hook's useEffect and the
+    // useFocusEffect stub fire on mount, so we keep throwing until we deliberately
+    // flip the flag right before the user presses Reintentar. That way the error
+    // state is guaranteed to appear before recovery, making the test deterministic.
+    let shouldFail = true;
+    const flaky = {
+      list: jest.fn(async () => {
+        if (shouldFail) throw new Error('boom');
+        return [];
+      }),
+      save: jest.fn(),
+      findById: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    await render(
+      <RepositoryProvider repository={flaky as any}>
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} />
+      </RepositoryProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText('No se pudieron cargar tus vencimientos.')).toBeTruthy(),
+    );
+    expect(screen.getByText('Reintentar')).toBeTruthy();
+
+    shouldFail = false;
+    fireEvent.press(screen.getByText('Reintentar'));
+
+    await waitFor(() =>
+      expect(screen.getByText('Aquí no se te pasará nada')).toBeTruthy(),
+    );
   });
 });
