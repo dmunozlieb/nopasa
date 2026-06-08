@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "_scaffold",
-    "slug": "_scaffold",
+    "name": "Nopasa",
+    "slug": "nopasa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon-nopasa-calendario-blanco-1024.png",
@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.dmunozlieb.nopasa",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/icon-nopasa-simbolo-blanco.png",
