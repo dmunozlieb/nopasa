@@ -111,12 +111,14 @@ tipo, `verb`/`consequence`/`primaryAction`/`secondaryAction`/`manage.label` no v
   español con array fijo (`['ene','feb',…]`), determinista, sin `Intl`/locale. Testeado
   (varios meses + días de un dígito).
 - **`formatAmountLine(deadline: Deadline): string | null`** (`format-amount.ts`):
-  - `deadline.amount == null` → `null` (sin importe → se oculta la línea).
   - si hay `amountLabel` → devuelve `amountLabel` (en los datos actuales ya incluye la
     cifra: "multa 200 €", "12,99 €/mes", "487 €/año").
-  - si solo hay `amount` → `"{amount con coma decimal} €"` (p.ej. 200 → "200 €",
+  - si no, pero hay `amount` → `"{amount con coma decimal} €"` (p.ej. 200 → "200 €",
     12.99 → "12,99 €").
-  Testeado (con label, solo amount, sin amount).
+  - si no hay ni `amountLabel` ni `amount` → `null` (se oculta la línea).
+  Testeado (con label, solo amount, sin nada). Nota: se prioriza `amountLabel` porque
+  algunos datos (y el test de la home) traen label sin `amount` numérico; así la home
+  mantiene su comportamiento al pasar a usar este helper.
 
 ### Refactor de coherencia (`DeadlineRow`)
 
