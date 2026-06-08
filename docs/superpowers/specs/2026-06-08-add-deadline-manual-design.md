@@ -71,9 +71,9 @@ deliberately shaped to graduate later into an app-wide cross-cutting dependency
   - DNI → `Documento nacional de identidad`
   - PASSPORT → `Documento para viajar fuera de la UE`
   - DRIVING_LICENSE → `Permiso de conducir`
-  - INSURANCE → `Seguro`
+  - INSURANCE → `Póliza de seguro`
   - SUBSCRIPTION → `Suscripción`
-  - WARRANTY → `Garantía`
+  - WARRANTY → `Garantía del producto`
   - GAS_INSPECTION → `Revisión del gas`
   - OTHER → `` (empty: no default description)
 - `src/ui/deadline/subtitle-sync.ts` — pure sync function. Given
