@@ -1,12 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { DeadlineDetailScreen } from '../../src/ui/screens/DeadlineDetailScreen';
 
-/** Placeholder. The detail screen is built in a later session. */
-export default function DeadlineDetail() {
+export default function DeadlineDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return (
-    <View>
-      <Text>Detalle del vencimiento {id} (próximamente)</Text>
-    </View>
-  );
+  const router = useRouter();
+  return <DeadlineDetailScreen id={id} onClose={() => router.back()} />;
 }
