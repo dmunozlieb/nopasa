@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Deadline } from '../../domain/deadline/deadline.schema';
 import { daysRemaining, urgencyLevel } from '../../domain/deadline/urgency';
+import { formatAmountLine } from '../deadline/format-amount';
 import { formatTimeRemaining } from '../deadline/format-time-remaining';
 import { typeIcon } from '../deadline/type-icons';
 import { urgencyColors } from '../deadline/urgency-colors';
@@ -21,6 +22,7 @@ export function DeadlineRow({ deadline, today, onPress }: DeadlineRowProps) {
   const level = urgencyLevel(deadline, today);
   const urgency = urgencyColors(level);
   const days = daysRemaining(deadline, today);
+  const amountLine = formatAmountLine(deadline);
 
   return (
     <Card onPress={onPress} style={styles.card}>
@@ -40,9 +42,9 @@ export function DeadlineRow({ deadline, today, onPress }: DeadlineRowProps) {
         </View>
         <View style={styles.right}>
           <Pill label={formatTimeRemaining(days)} urgency={urgency} />
-          {deadline.amountLabel ? (
+          {amountLine ? (
             <AppText weight="bold" size={fontSizes.small} color={colors.textFaint} style={styles.amount}>
-              {deadline.amountLabel}
+              {amountLine}
             </AppText>
           ) : null}
         </View>
