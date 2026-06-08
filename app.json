@@ -4,7 +4,7 @@
     "slug": "_scaffold",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-nopasa-calendario-blanco-1024.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -12,8 +12,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
+        "foregroundImage": "./assets/icon-nopasa-simbolo-blanco.png",
+        "backgroundImage": "./assets/icon-nopasa-fondo-degradado.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -21,8 +21,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "nopasa",
     "plugins": [
-      "expo-sqlite"
+      "expo-router",
+      "expo-sqlite",
+      "expo-font"
     ]
   }
 }
