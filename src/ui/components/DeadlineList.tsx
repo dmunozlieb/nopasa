@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DeadlineGroup, GroupedDeadlines } from '../../domain/deadline/grouping';
 import type { UrgencyLevel } from '../../domain/deadline/urgency';
 import { groupLabel } from '../deadline/group-labels';
@@ -28,10 +29,14 @@ function summaryText(n: number): string {
 
 export function DeadlineList({ groups, today, onPressRow, onAdd }: DeadlineListProps) {
   const attention = groups.NEEDS_ATTENTION.length;
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: spacing.xl + insets.top }]}
+        showsVerticalScrollIndicator={false}
+      >
         <ScreenHeader
           title="Mis vencimientos"
           summary={summaryText(attention)}
@@ -50,7 +55,7 @@ export function DeadlineList({ groups, today, onPressRow, onAdd }: DeadlineListP
           );
         })}
       </ScrollView>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: spacing.xl + insets.bottom }]}>
         <Button label="Añadir" icon="plus" onPress={onAdd} />
       </View>
     </View>

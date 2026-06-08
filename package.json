@@ -51,7 +51,10 @@
     ],
     "moduleNameMapper": {
       "^expo-asset$": "<rootDir>/node_modules/expo/node_modules/expo-asset"
-    }
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "private": true
 }

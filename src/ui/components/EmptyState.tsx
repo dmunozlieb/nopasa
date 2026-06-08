@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '../theme';
 import { AppText } from './AppText';
@@ -14,8 +15,9 @@ interface EmptyStateProps {
  * are resolved. Distinguishing "first use" from "all caught up" is out of scope now.
  */
 export function EmptyState({ onAdd }: EmptyStateProps) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: spacing.xl + insets.top, paddingBottom: spacing.xl + insets.bottom }]}>
       <AppText weight="extrabold" size={fontSizes.body} color={colors.brandBlue} style={styles.wordmark}>
         nopasa
       </AppText>
