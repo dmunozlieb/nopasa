@@ -94,7 +94,7 @@ tipo, `verb`/`consequence`/`primaryAction`/`secondaryAction`/`manage.label` no v
 | SUBSCRIPTION | Se cobra | Se renueva sola en esta fecha; puedes gestionarla o cancelarla cuando quieras. | Gestionar o cancelar | Ver todas mis suscripciones | Marcar como cancelada | CANCELLED |
 | WARRANTY | Termina | Mientras la garantía siga activa, las reparaciones cubiertas no te cuestan. | Ver mi garantía | Contactar con el servicio técnico | Marcar como resuelta | RESOLVED |
 | GAS_INSPECTION | Vence | La revisión periódica del gas es obligatoria y ayuda a mantener la instalación segura. | Reservar revisión de gas | Ver técnicos cercanos | Marcar como hecha | RESOLVED |
-| OTHER | Vence | Te avisaremos con tiempo para que puedas ocuparte de ello. | Gestionar este vencimiento | Añadir una nota | Marcar como resuelto | RESOLVED |
+| OTHER | Vence | Te avisaremos con tiempo para que puedas ocuparte de ello. | Gestionar este vencimiento | Ver detalles | Marcar como resuelto | RESOLVED |
 
 > Las consecuencias son factuales y sin alarmismo a propósito: ninguna cita cifras ni
 > amenazas; la cifra concreta vive en la línea de importe y la gravedad la da el color.
