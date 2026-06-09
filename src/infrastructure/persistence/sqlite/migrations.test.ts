@@ -22,4 +22,14 @@ describe('MIGRATIONS', () => {
       expect(sql).toContain(column);
     }
   });
+
+  it('v2 creates the settings table with its columns', () => {
+    const v2 = MIGRATIONS.find((m) => m.version === 2);
+    expect(v2).toBeDefined();
+    const sql = v2!.sql;
+    expect(sql).toContain('CREATE TABLE settings');
+    for (const column of ['id', 'reminder_hour', 'reminder_minute', 'default_reminder_days_before']) {
+      expect(sql).toContain(column);
+    }
+  });
 });
