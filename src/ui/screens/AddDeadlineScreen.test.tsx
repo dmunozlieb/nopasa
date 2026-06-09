@@ -1,15 +1,19 @@
 import { Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
+import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
+import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
 import { AddDeadlineScreen } from './AddDeadlineScreen';
 
 function renderScreen(repo: InMemoryDeadlineRepository, onClose: () => void = () => {}) {
   return render(
     <RepositoryProvider repository={repo}>
       <DeadlineDepsProvider generateId={() => 'fixed-id'} clock={{ now: () => new Date(2026, 5, 8) }}>
-        <AddDeadlineScreen onClose={onClose} />
+        <NotificationSchedulerProvider scheduler={new FakeNotificationScheduler()}>
+          <AddDeadlineScreen onClose={onClose} />
+        </NotificationSchedulerProvider>
       </DeadlineDepsProvider>
     </RepositoryProvider>,
   );

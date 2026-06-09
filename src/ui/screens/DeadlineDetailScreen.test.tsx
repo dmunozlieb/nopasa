@@ -1,13 +1,22 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { buildDeadline } from '../../test-support/build-deadline';
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
+import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
 import { RepositoryProvider } from '../repository/repository-context';
+import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
 import { DeadlineDetailScreen } from './DeadlineDetailScreen';
 
-function renderWith(repo: InMemoryDeadlineRepository, id: string, onClose: () => void = () => {}) {
+function renderWith(
+  repo: InMemoryDeadlineRepository,
+  id: string,
+  onClose: () => void = () => {},
+  scheduler: FakeNotificationScheduler = new FakeNotificationScheduler(),
+) {
   return render(
     <RepositoryProvider repository={repo}>
-      <DeadlineDetailScreen id={id} onClose={onClose} />
+      <NotificationSchedulerProvider scheduler={scheduler}>
+        <DeadlineDetailScreen id={id} onClose={onClose} />
+      </NotificationSchedulerProvider>
     </RepositoryProvider>,
   );
 }
@@ -52,29 +61,33 @@ describe('DeadlineDetailScreen', () => {
     expect(await screen.findByText('No encontramos este vencimiento.')).toBeTruthy();
   });
 
-  it('marks as resolved: updates the repository status and closes', async () => {
+  it('marks as resolved: updates the repository status, cancels reminders and closes', async () => {
     const repo = new InMemoryDeadlineRepository([
       buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio', status: 'ACTIVE' }),
     ]);
     const onClose = jest.fn();
-    await renderWith(repo, '1', onClose);
+    const scheduler = new FakeNotificationScheduler();
+    await renderWith(repo, '1', onClose, scheduler);
 
     fireEvent.press(await screen.findByText('Marcar como renovado'));
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect((await repo.findById('1'))?.status).toBe('RESOLVED');
+    expect(scheduler.cancelled).toEqual(['1']);
   });
 
-  it('marks a subscription as cancelled', async () => {
+  it('marks a subscription as cancelled and cancels its reminders', async () => {
     const repo = new InMemoryDeadlineRepository([
       buildDeadline({ id: '2', type: 'SUBSCRIPTION', title: 'Netflix', status: 'ACTIVE' }),
     ]);
     const onClose = jest.fn();
-    await renderWith(repo, '2', onClose);
+    const scheduler = new FakeNotificationScheduler();
+    await renderWith(repo, '2', onClose, scheduler);
 
     fireEvent.press(await screen.findByText('Marcar como cancelada'));
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect((await repo.findById('2'))?.status).toBe('CANCELLED');
+    expect(scheduler.cancelled).toEqual(['2']);
   });
 });

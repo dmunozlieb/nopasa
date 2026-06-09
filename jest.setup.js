@@ -30,3 +30,18 @@ jest.mock('@react-native-community/datetimepicker', () => {
       React.createElement(View, { testID: 'datetimepicker', onChange: props.onChange }),
   };
 });
+
+// Mock expo-notifications: the native module can't load under jsdom. Defaults are
+// inert-but-functional (permission granted, no scheduled items) so the adapter is
+// importable; the adapter's own test overrides return values per case.
+jest.mock('expo-notifications', () => ({
+  __esModule: true,
+  SchedulableTriggerInputTypes: { DATE: 'date' },
+  AndroidImportance: { MIN: 1, LOW: 2, DEFAULT: 3, HIGH: 4, MAX: 5 },
+  getPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  scheduleNotificationAsync: jest.fn(async () => 'mock-id'),
+  getAllScheduledNotificationsAsync: jest.fn(async () => []),
+  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+}));

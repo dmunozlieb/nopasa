@@ -10,6 +10,7 @@ import { typeIcon } from '../deadline/type-icons';
 import { urgencyColors } from '../deadline/urgency-colors';
 import { useDeadline } from '../hooks/use-deadline';
 import { useDeadlineRepository } from '../repository/repository-context';
+import { useNotificationScheduler } from '../notification-scheduler/notification-scheduler-context';
 import { colors, fontSizes, radii, spacing } from '../theme';
 import { ActionButton } from '../components/ActionButton';
 import { AppText } from '../components/AppText';
@@ -26,6 +27,7 @@ interface DeadlineDetailScreenProps {
 export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps) {
   const { status, deadline } = useDeadline(id);
   const repo = useDeadlineRepository();
+  const scheduler = useNotificationScheduler();
   const insets = useSafeAreaInsets();
 
   if (status === 'loading') return <Loading />;
@@ -56,6 +58,11 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
 
   const markAs = async () => {
     await repo.update({ ...deadline, status: presentation.manage.targetStatus });
+    try {
+      await scheduler.cancel(deadline.id);
+    } catch {
+      // Cancellation is best-effort; closing should not depend on it.
+    }
     onClose();
   };
 
