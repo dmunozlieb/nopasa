@@ -12,3 +12,15 @@ jest.mock('react-native-safe-area-context', () => {
     initialWindowMetrics: { insets, frame },
   };
 });
+
+// Mock the native date picker: render a host View we can find and whose onChange
+// we can fire from tests, without pulling in the native module under jsdom.
+jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props) =>
+      React.createElement(View, { testID: 'datetimepicker', onChange: props.onChange }),
+  };
+});
