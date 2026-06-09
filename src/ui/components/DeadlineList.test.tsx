@@ -23,7 +23,7 @@ describe('DeadlineList', () => {
 
   it('renders title, summary and sections with counts and pills', async () => {
     await render(
-      <DeadlineList groups={makeGroups(today)} today={today} onPressRow={() => {}} onAdd={() => {}} />,
+      <DeadlineList groups={makeGroups(today)} today={today} onPressRow={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />,
     );
 
     expect(screen.getByText('Mis vencimientos')).toBeTruthy();
@@ -37,7 +37,7 @@ describe('DeadlineList', () => {
 
   it('hides empty sections', async () => {
     await render(
-      <DeadlineList groups={makeGroups(today)} today={today} onPressRow={() => {}} onAdd={() => {}} />,
+      <DeadlineList groups={makeGroups(today)} today={today} onPressRow={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />,
     );
     // No CALM items were added.
     expect(screen.queryByText('TRANQUILAS')).toBeNull();

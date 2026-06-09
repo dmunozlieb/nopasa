@@ -15,6 +15,7 @@ interface DeadlineListProps {
   today: Date;
   onPressRow: (id: string) => void;
   onAdd: () => void;
+  onOpenSettings: () => void;
 }
 
 const ORDER: { key: DeadlineGroup; level: UrgencyLevel }[] = [
@@ -27,7 +28,7 @@ function summaryText(n: number): string {
   return n === 1 ? '1 cosa requiere tu atención' : `${n} cosas requieren tu atención`;
 }
 
-export function DeadlineList({ groups, today, onPressRow, onAdd }: DeadlineListProps) {
+export function DeadlineList({ groups, today, onPressRow, onAdd, onOpenSettings }: DeadlineListProps) {
   const attention = groups.NEEDS_ATTENTION.length;
   const insets = useSafeAreaInsets();
 
@@ -41,6 +42,7 @@ export function DeadlineList({ groups, today, onPressRow, onAdd }: DeadlineListP
           title="Mis vencimientos"
           summary={summaryText(attention)}
           summaryDotColor={colors.urgency.urgent.base}
+          onSettings={onOpenSettings}
         />
         {ORDER.map(({ key, level }) => {
           const items = groups[key];

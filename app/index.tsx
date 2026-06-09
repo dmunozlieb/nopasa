@@ -7,6 +7,7 @@ export default function Home() {
     <HomeScreen
       onOpenDeadline={(id) => router.push(`/deadline/${id}`)}
       onAdd={() => router.push('/add')}
+      onOpenSettings={() => router.push('/settings')}
     />
   );
 }

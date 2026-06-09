@@ -30,7 +30,7 @@ describe('HomeScreen (integration)', () => {
 
     await render(
       <RepositoryProvider repository={repo}>
-        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} />
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />
       </RepositoryProvider>,
     );
 
@@ -45,7 +45,7 @@ describe('HomeScreen (integration)', () => {
   it('shows the empty state when the repository is empty', async () => {
     await render(
       <RepositoryProvider repository={new InMemoryDeadlineRepository()}>
-        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} />
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />
       </RepositoryProvider>,
     );
     await waitFor(() => expect(screen.getByText('Aquí no se te pasará nada')).toBeTruthy());
@@ -70,7 +70,7 @@ describe('HomeScreen (integration)', () => {
 
     await render(
       <RepositoryProvider repository={flaky as any}>
-        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} />
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />
       </RepositoryProvider>,
     );
 
@@ -85,5 +85,19 @@ describe('HomeScreen (integration)', () => {
     await waitFor(() =>
       expect(screen.getByText('Aquí no se te pasará nada')).toBeTruthy(),
     );
+  });
+
+  it('opens settings from the populated home header', async () => {
+    const repo = new InMemoryDeadlineRepository([buildDeadline({ id: '1', title: 'ITV — Clio', dueDate: at(4) })]);
+    const onOpenSettings = jest.fn();
+
+    await render(
+      <RepositoryProvider repository={repo}>
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} onOpenSettings={onOpenSettings} />
+      </RepositoryProvider>,
+    );
+
+    fireEvent.press(await screen.findByLabelText('Ajustes'));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 });

@@ -12,7 +12,7 @@ import { useDeadlines } from '../hooks/use-deadlines';
 interface HomeScreenProps {
   onOpenDeadline: (id: string) => void;
   onAdd: () => void;
-  onOpenSettings?: () => void;
+  onOpenSettings: () => void;
 }
 
 /** Home container: loads deadlines, refreshes on focus, picks loading/error/empty/list. */
@@ -39,9 +39,9 @@ export function HomeScreen({ onOpenDeadline, onAdd, onOpenSettings }: HomeScreen
   }
 
   const total = groups.NEEDS_ATTENTION.length + groups.UPCOMING.length + groups.CALM.length;
-  if (total === 0) return <EmptyState onAdd={onAdd} onOpenSettings={onOpenSettings ?? (() => {})} />;
+  if (total === 0) return <EmptyState onAdd={onAdd} onOpenSettings={onOpenSettings} />;
 
-  return <DeadlineList groups={groups} today={today} onPressRow={onOpenDeadline} onAdd={onAdd} />;
+  return <DeadlineList groups={groups} today={today} onPressRow={onOpenDeadline} onAdd={onAdd} onOpenSettings={onOpenSettings} />;
 }
 
 const styles = StyleSheet.create({
