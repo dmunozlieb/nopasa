@@ -7,7 +7,7 @@ describe('runMigrations', () => {
     const db = new NodeSqliteExecutor(':memory:');
     await runMigrations(db);
 
-    expect(await db.getUserVersion()).toBe(1);
+    expect(await db.getUserVersion()).toBe(2);
     const table = await db.getFirst<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'deadlines'",
     );
@@ -18,6 +18,6 @@ describe('runMigrations', () => {
     const db = new NodeSqliteExecutor(':memory:');
     await runMigrations(db);
     await expect(runMigrations(db)).resolves.toBeUndefined();
-    expect(await db.getUserVersion()).toBe(1);
+    expect(await db.getUserVersion()).toBe(2);
   });
 });
