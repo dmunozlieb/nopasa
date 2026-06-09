@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '../theme';
@@ -7,6 +7,7 @@ import { Button } from './Button';
 
 interface EmptyStateProps {
   onAdd: () => void;
+  onOpenSettings: () => void;
 }
 
 /**
@@ -14,10 +15,19 @@ interface EmptyStateProps {
  * NOTE (future session): copy assumes first use; it also shows when all deadlines
  * are resolved. Distinguishing "first use" from "all caught up" is out of scope now.
  */
-export function EmptyState({ onAdd }: EmptyStateProps) {
+export function EmptyState({ onAdd, onOpenSettings }: EmptyStateProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: spacing.xl + insets.top, paddingBottom: spacing.xl + insets.bottom }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Ajustes"
+        onPress={onOpenSettings}
+        hitSlop={8}
+        style={[styles.settingsButton, { top: insets.top + spacing.sm }]}
+      >
+        <MaterialCommunityIcons name="cog" size={26} color={colors.textSecondary} />
+      </Pressable>
       <AppText weight="extrabold" size={fontSizes.body} color={colors.brandBlue} style={styles.wordmark}>
         nopasa
       </AppText>
@@ -76,4 +86,5 @@ const styles = StyleSheet.create({
   support: { textAlign: 'center', lineHeight: 24, paddingHorizontal: spacing.lg },
   footer: { gap: spacing.md },
   privacy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  settingsButton: { position: 'absolute', right: spacing.xl, zIndex: 1 },
 });
