@@ -9,6 +9,7 @@ import {
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RepositoryProvider } from '../src/ui/repository/repository-context';
+import { DeadlineDepsProvider } from '../src/ui/deadline-deps/deadline-deps-context';
 import { Loading } from '../src/ui/components/Loading';
 
 export default function RootLayout() {
@@ -25,11 +26,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <RepositoryProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="add" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="deadline/[id]" options={{ presentation: 'modal' }} />
-        </Stack>
+        <DeadlineDepsProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="add" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="deadline/[id]" options={{ presentation: 'modal' }} />
+          </Stack>
+        </DeadlineDepsProvider>
       </RepositoryProvider>
     </SafeAreaProvider>
   );

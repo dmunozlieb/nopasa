@@ -1,10 +1,7 @@
-import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AddDeadlineScreen } from '../src/ui/screens/AddDeadlineScreen';
 
-/** Placeholder. The add flow (camera/OCR/manual) is built in a later session. */
-export default function AddDeadline() {
-  return (
-    <View>
-      <Text>Añadir vencimiento (próximamente)</Text>
-    </View>
-  );
+export default function AddDeadlineRoute() {
+  const router = useRouter();
+  return <AddDeadlineScreen onClose={() => router.back()} />;
 }
