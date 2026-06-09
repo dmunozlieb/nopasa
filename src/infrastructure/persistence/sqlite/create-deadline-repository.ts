@@ -1,15 +1,9 @@
-import { openDatabaseAsync } from 'expo-sqlite';
 import type { DeadlineRepository } from '../../../ports/deadline-repository';
-import { ExpoSqliteExecutor } from './expo-sqlite-executor';
-import { runMigrations } from './run-migrations';
+import { openMigratedDatabase } from './database';
 import { SqliteDeadlineRepository } from './sqlite-deadline-repository';
 
-/** Opens the on-device database, runs migrations, and returns a ready DeadlineRepository. */
-export async function createDeadlineRepository(
-  databaseName = 'nopasa.db',
-): Promise<DeadlineRepository> {
-  const db = await openDatabaseAsync(databaseName);
-  const executor = new ExpoSqliteExecutor(db);
-  await runMigrations(executor);
+/** Returns a DeadlineRepository over the shared, migrated on-device database. */
+export async function createDeadlineRepository(): Promise<DeadlineRepository> {
+  const executor = await openMigratedDatabase();
   return new SqliteDeadlineRepository(executor);
 }
