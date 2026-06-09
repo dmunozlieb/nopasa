@@ -8,6 +8,7 @@ import { syncSubtitle } from '../deadline/subtitle-sync';
 import { toCreateInput, validateAddForm, type AddFormState } from '../deadline/add-form';
 import { useCreateDeadline } from '../hooks/use-create-deadline';
 import { useDeadlineDeps } from '../deadline-deps/deadline-deps-context';
+import { useSettings } from '../settings/settings-context';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DatePickerField } from '../components/DatePickerField';
@@ -23,6 +24,7 @@ interface AddDeadlineScreenProps {
 /** Manual add-a-deadline form. Builds a Deadline via the factory and persists it. */
 export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
   const deps = useDeadlineDeps();
+  const { settings } = useSettings();
   const createDeadline = useCreateDeadline();
   const insets = useSafeAreaInsets();
 
@@ -33,7 +35,7 @@ export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
     subtitleTouched: false,
     dueDate: startOfDay(deps.clock.now()),
     amount: '',
-    reminderDaysBefore: [30, 7],
+    reminderDaysBefore: settings.defaultReminderDaysBefore,
   }));
   const [titleTouched, setTitleTouched] = useState(false);
   // Re-entry guard kept in a ref so pressing twice can't double-save, without a
