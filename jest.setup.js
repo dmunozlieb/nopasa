@@ -13,6 +13,12 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+// Mock expo-crypto: jsdom has no randomUUID, so the production IdGenerator would
+// return undefined. A fixed RFC-4122 string keeps expoCryptoIdGenerator usable in tests.
+jest.mock('expo-crypto', () => ({
+  randomUUID: () => '00000000-0000-4000-8000-000000000000',
+}));
+
 // Mock the native date picker: render a host View we can find and whose onChange
 // we can fire from tests, without pulling in the native module under jsdom.
 jest.mock('@react-native-community/datetimepicker', () => {
