@@ -16,6 +16,7 @@
     "expo-notifications": "~56.0.16",
     "expo-router": "~56.2.9",
     "expo-sharing": "~56.0.16",
+    "expo-splash-screen": "~56.0.10",
     "expo-sqlite": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
@@ -27,7 +28,7 @@
   "devDependencies": {
     "@react-native/jest-preset": "^0.85.3",
     "@testing-library/react-native": "^14.0.0",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^56.0.14",
     "cross-env": "^10.1.0",
