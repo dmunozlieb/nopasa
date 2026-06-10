@@ -87,6 +87,21 @@ describe('HomeScreen (integration)', () => {
     );
   });
 
+  it('shows the "all caught up" state when every deadline is resolved or cancelled', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', status: 'RESOLVED' }),
+      buildDeadline({ id: '2', status: 'CANCELLED' }),
+    ]);
+
+    await render(
+      <RepositoryProvider repository={repo}>
+        <HomeScreen onOpenDeadline={() => {}} onAdd={() => {}} onOpenSettings={() => {}} />
+      </RepositoryProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Todo en orden')).toBeTruthy());
+  });
+
   it('opens settings from the populated home header', async () => {
     const repo = new InMemoryDeadlineRepository([buildDeadline({ id: '1', title: 'ITV — Clio', dueDate: at(4) })]);
     const onOpenSettings = jest.fn();

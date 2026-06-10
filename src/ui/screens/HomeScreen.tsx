@@ -17,7 +17,7 @@ interface HomeScreenProps {
 
 /** Home container: loads deadlines, refreshes on focus, picks loading/error/empty/list. */
 export function HomeScreen({ onOpenDeadline, onAdd, onOpenSettings }: HomeScreenProps) {
-  const { status, groups, today, refresh } = useDeadlines();
+  const { status, groups, today, storedCount, refresh } = useDeadlines();
 
   useFocusEffect(
     useCallback(() => {
@@ -38,8 +38,11 @@ export function HomeScreen({ onOpenDeadline, onAdd, onOpenSettings }: HomeScreen
     );
   }
 
-  const total = groups.NEEDS_ATTENTION.length + groups.UPCOMING.length + groups.CALM.length;
-  if (total === 0) return <EmptyState onAdd={onAdd} onOpenSettings={onOpenSettings} />;
+  const activeTotal = groups.NEEDS_ATTENTION.length + groups.UPCOMING.length + groups.CALM.length;
+  if (activeTotal === 0) {
+    const variant = storedCount === 0 ? 'first-use' : 'all-caught-up';
+    return <EmptyState variant={variant} onAdd={onAdd} onOpenSettings={onOpenSettings} />;
+  }
 
   return <DeadlineList groups={groups} today={today} onPressRow={onOpenDeadline} onAdd={onAdd} onOpenSettings={onOpenSettings} />;
 }
