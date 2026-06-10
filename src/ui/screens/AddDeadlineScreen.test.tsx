@@ -105,4 +105,35 @@ describe('AddDeadlineScreen', () => {
       expect(saved?.reminderDaysBefore).toEqual([1, 7]);
     });
   });
+
+  it('shows the empty-plan hint for an unreachable date and still allows saving', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const onClose = jest.fn();
+    await renderScreen(repo, onClose);
+
+    const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
+    fireEvent.changeText(titleInput, 'ITV del coche');
+    await screen.findByDisplayValue('ITV del coche');
+
+    expect(screen.getByText(/tus avisos ya han pasado/)).toBeTruthy();
+
+    // Non-blocking: saving still works despite the hint.
+    fireEvent.press(screen.getByText('Guardar'));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(await repo.findById('fixed-id')).not.toBeNull();
+  });
+
+  it('hides the empty-plan hint when no reminders are selected', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    await renderScreen(repo);
+    await screen.findByPlaceholderText('Ej. ITV del coche');
+
+    expect(screen.getByText(/tus avisos ya han pasado/)).toBeTruthy(); // default today + [30, 7]
+
+    fireEvent.press(screen.getByText('30 días')); // deselect 30 → [7] (still all past)
+    await screen.findByText(/tus avisos ya han pasado/);
+    fireEvent.press(screen.getByText('7 días')); // deselect 7 → [] (no reminders)
+
+    await waitFor(() => expect(screen.queryByText(/tus avisos ya han pasado/)).toBeNull());
+  });
 });
