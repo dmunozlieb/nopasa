@@ -45,3 +45,25 @@ jest.mock('expo-notifications', () => ({
   getAllScheduledNotificationsAsync: jest.fn(async () => []),
   cancelScheduledNotificationAsync: jest.fn(async () => undefined),
 }));
+
+// Mock expo-file-system: the new File/Paths API can't load its native module under jsdom.
+// A tiny stand-in makes the adapter importable; tests inject FakeDataExporter, so the real
+// adapter never runs.
+jest.mock('expo-file-system', () => ({
+  __esModule: true,
+  Paths: { cache: 'file:///cache', document: 'file:///document' },
+  File: class {
+    uri;
+    constructor(dir, name) {
+      this.uri = `${dir}/${name}`;
+    }
+    write() {}
+  },
+}));
+
+// Mock expo-sharing similarly.
+jest.mock('expo-sharing', () => ({
+  __esModule: true,
+  isAvailableAsync: jest.fn(async () => true),
+  shareAsync: jest.fn(async () => undefined),
+}));
