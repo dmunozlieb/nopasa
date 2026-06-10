@@ -45,7 +45,13 @@ To tell them apart, the home needs the raw stored count.
 - **`useDeadlines`** gains one field: `storedCount: number` (= `list.length`, all
   statuses). Added to `UseDeadlinesResult`; it is `0` while loading/error (the list starts
   `[]`). Minimal and sufficient.
-- **`HomeScreen`** computes the case:
+- **`HomeScreen`** computes the case. The existing `loading`/`error` guards MUST stay
+  ABOVE this branch (they already do: `HomeScreen.tsx` returns `<Loading />` for
+  `status === 'loading'` and the error block for `status === 'error'` before any
+  empty/list decision). This — together with `RepositoryProvider` gating on `<Loading />`
+  until the repo is built — means a cold start with saved data never evaluates the
+  empty-state branch while `storedCount` is still `0`, so "first use" never flashes before
+  the list appears. Only when `status === 'ready'`:
   - `activeTotal > 0` → `DeadlineList` (unchanged).
   - `activeTotal === 0 && storedCount === 0` → `EmptyState variant="first-use"`.
   - `activeTotal === 0 && storedCount > 0` → `EmptyState variant="all-caught-up"`.
