@@ -6,13 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon-nopasa-calendario-blanco-1024.png",
     "userInterfaceStyle": "light",
+    "scheme": "nopasa",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.danapps.nopasa"
     },
     "android": {
-      "package": "com.dmunozlieb.nopasa",
+      "package": "com.danapps.nopasa",
+      "versionCode": 1,
+      "permissions": ["android.permission.POST_NOTIFICATIONS"],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#3E6BC8",
         "foregroundImage": "./assets/icon-nopasa-simbolo-blanco.png",
         "backgroundImage": "./assets/icon-nopasa-fondo-degradado.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -22,13 +30,28 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "nopasa",
     "plugins": [
       "expo-router",
       "expo-sqlite",
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#3E6BC8"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#3E6BC8",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }
