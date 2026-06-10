@@ -20,3 +20,18 @@ export function reminderFireTimes(
       ),
   );
 }
+
+/** True iff at least one reminder is selected AND every one fires at/before `now` — i.e.
+ *  for this date the user's reminders would all be in the past, producing no future alert.
+ *  No reminders selected → false (a deliberate choice, not a "passed" case). */
+export function remindersAllInPast(
+  dueDate: Date,
+  reminderDaysBefore: number[],
+  now: Date,
+  reminderTime: ReminderTime,
+): boolean {
+  if (reminderDaysBefore.length === 0) return false;
+  return reminderFireTimes(dueDate, reminderDaysBefore, reminderTime).every(
+    (fireAt) => fireAt.getTime() <= now.getTime(),
+  );
+}
