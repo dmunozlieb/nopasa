@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DeadlineType } from '../../domain/deadline/deadline.schema';
 import { startOfDay } from '../../domain/shared/date';
 import { defaultSubtitle } from '../deadline/default-subtitle';
@@ -8,6 +9,8 @@ import { syncSubtitle } from '../deadline/subtitle-sync';
 import { toCreateInput, validateAddForm, type AddFormState } from '../deadline/add-form';
 import { useCreateDeadline } from '../hooks/use-create-deadline';
 import { useDeadlineDeps } from '../deadline-deps/deadline-deps-context';
+import { useSettings } from '../settings/settings-context';
+import { remindersAllInPast } from '../notification/reminder-fire-times';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DatePickerField } from '../components/DatePickerField';
@@ -23,6 +26,7 @@ interface AddDeadlineScreenProps {
 /** Manual add-a-deadline form. Builds a Deadline via the factory and persists it. */
 export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
   const deps = useDeadlineDeps();
+  const { settings } = useSettings();
   const createDeadline = useCreateDeadline();
   const insets = useSafeAreaInsets();
 
@@ -33,7 +37,7 @@ export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
     subtitleTouched: false,
     dueDate: startOfDay(deps.clock.now()),
     amount: '',
-    reminderDaysBefore: [30, 7],
+    reminderDaysBefore: settings.defaultReminderDaysBefore,
   }));
   const [titleTouched, setTitleTouched] = useState(false);
   // Re-entry guard kept in a ref so pressing twice can't double-save, without a
@@ -43,6 +47,12 @@ export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
 
   const { valid, errors } = validateAddForm(state);
   const titleHint = titleTouched ? errors.title : undefined;
+  const showPastHint = remindersAllInPast(
+    state.dueDate,
+    state.reminderDaysBefore,
+    deps.clock.now(),
+    settings.reminderTime,
+  );
 
   const onChangeType = (type: DeadlineType) =>
     setState((s) => ({ ...s, type, subtitle: syncSubtitle({ type, current: s.subtitle, touched: s.subtitleTouched }) }));
@@ -121,6 +131,15 @@ export function AddDeadlineScreen({ onClose }: AddDeadlineScreenProps) {
           />
         </FormField>
 
+        {showPastHint ? (
+          <View style={styles.pastHint}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={16} color={colors.urgency.upcoming.base} />
+            <AppText weight="semibold" size={fontSizes.small} color={colors.urgency.upcoming.base} style={styles.pastHintText}>
+              Para esta fecha, tus avisos ya han pasado. Puedes guardarlo igualmente o acercar la fecha.
+            </AppText>
+          </View>
+        ) : null}
+
         <Button label="Guardar" onPress={onSave} disabled={!valid} />
       </ScrollView>
     </View>
@@ -140,4 +159,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.button,
     backgroundColor: colors.surfaceSoft,
   },
+  pastHint: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  pastHintText: { flex: 1 },
 });

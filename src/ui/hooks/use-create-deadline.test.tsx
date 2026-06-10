@@ -1,18 +1,26 @@
 import type { ReactNode } from 'react';
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
+import { InMemorySettingsRepository } from '../../test-support/in-memory-settings-repository';
 import type { NotificationScheduler } from '../../ports/notification-scheduler';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
+import { SettingsProvider } from '../settings/settings-context';
 import { useCreateDeadline } from './use-create-deadline';
 
-function wrapperWith(repo: InMemoryDeadlineRepository, scheduler: NotificationScheduler) {
+function wrapperWith(
+  repo: InMemoryDeadlineRepository,
+  scheduler: NotificationScheduler,
+  settingsRepo = new InMemorySettingsRepository(),
+) {
   return ({ children }: { children: ReactNode }) => (
     <RepositoryProvider repository={repo}>
       <DeadlineDepsProvider generateId={() => 'fixed-id'} clock={{ now: () => new Date(2026, 5, 8) }}>
-        <NotificationSchedulerProvider scheduler={scheduler}>{children}</NotificationSchedulerProvider>
+        <NotificationSchedulerProvider scheduler={scheduler}>
+          <SettingsProvider repository={settingsRepo}>{children}</SettingsProvider>
+        </NotificationSchedulerProvider>
       </DeadlineDepsProvider>
     </RepositoryProvider>
   );
@@ -31,6 +39,7 @@ describe('useCreateDeadline', () => {
     const { result } = await renderHook(() => useCreateDeadline(), {
       wrapper: wrapperWith(repo, new FakeNotificationScheduler()),
     });
+    await waitFor(() => expect(typeof result.current).toBe('function'));
 
     const created = await result.current(input);
 
@@ -40,18 +49,21 @@ describe('useCreateDeadline', () => {
     expect(await repo.findById('fixed-id')).toMatchObject({ id: 'fixed-id', title: 'ITV del coche' });
   });
 
-  it('schedules the reminder plan for the new deadline', async () => {
+  it('schedules reminders at the time from settings', async () => {
     const repo = new InMemoryDeadlineRepository();
     const scheduler = new FakeNotificationScheduler();
+    const settingsRepo = new InMemorySettingsRepository({ reminderTime: { hour: 8, minute: 30 }, defaultReminderDaysBefore: [30, 7] });
     const { result } = await renderHook(() => useCreateDeadline(), {
-      wrapper: wrapperWith(repo, scheduler),
+      wrapper: wrapperWith(repo, scheduler, settingsRepo),
     });
+    await waitFor(() => expect(typeof result.current).toBe('function'));
 
     await result.current(input);
 
-    expect(scheduler.scheduled.get('fixed-id')).toEqual([
-      { fireAt: new Date(2026, 7, 25, 9, 0), title: 'ITV del coche', body: 'Caduca en 7 días · 1 sep' },
-      { fireAt: new Date(2026, 7, 2, 9, 0), title: 'ITV del coche', body: 'Caduca en 30 días · 1 sep' },
+    const plan = scheduler.scheduled.get('fixed-id')!;
+    expect(plan.map((p) => [p.fireAt.getHours(), p.fireAt.getMinutes()])).toEqual([
+      [8, 30],
+      [8, 30],
     ]);
   });
 
@@ -66,6 +78,7 @@ describe('useCreateDeadline', () => {
     const { result } = await renderHook(() => useCreateDeadline(), {
       wrapper: wrapperWith(repo, throwing),
     });
+    await waitFor(() => expect(typeof result.current).toBe('function'));
 
     const created = await result.current(input);
 

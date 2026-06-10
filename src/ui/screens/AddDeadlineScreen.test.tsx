@@ -1,18 +1,26 @@
 import { Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
+import { InMemorySettingsRepository } from '../../test-support/in-memory-settings-repository';
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
+import { SettingsProvider } from '../settings/settings-context';
 import { AddDeadlineScreen } from './AddDeadlineScreen';
 
-function renderScreen(repo: InMemoryDeadlineRepository, onClose: () => void = () => {}) {
+function renderScreen(
+  repo: InMemoryDeadlineRepository,
+  onClose: () => void = () => {},
+  settingsRepo: InMemorySettingsRepository = new InMemorySettingsRepository(),
+) {
   return render(
     <RepositoryProvider repository={repo}>
       <DeadlineDepsProvider generateId={() => 'fixed-id'} clock={{ now: () => new Date(2026, 5, 8) }}>
         <NotificationSchedulerProvider scheduler={new FakeNotificationScheduler()}>
-          <AddDeadlineScreen onClose={onClose} />
+          <SettingsProvider repository={settingsRepo}>
+            <AddDeadlineScreen onClose={onClose} />
+          </SettingsProvider>
         </NotificationSchedulerProvider>
       </DeadlineDepsProvider>
     </RepositoryProvider>,
@@ -81,5 +89,51 @@ describe('AddDeadlineScreen', () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalled());
     expect(onClose).not.toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  it('seeds the reminder chips from settings', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const settingsRepo = new InMemorySettingsRepository({ reminderTime: { hour: 9, minute: 0 }, defaultReminderDaysBefore: [7, 1] });
+    await renderScreen(repo, () => {}, settingsRepo);
+
+    fireEvent.changeText(await screen.findByPlaceholderText('Ej. ITV del coche'), 'Pasaporte de Ana');
+    await screen.findByDisplayValue('Pasaporte de Ana');
+    fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(async () => {
+      const saved = await repo.findById('fixed-id');
+      expect(saved?.reminderDaysBefore).toEqual([1, 7]);
+    });
+  });
+
+  it('shows the empty-plan hint for an unreachable date and still allows saving', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const onClose = jest.fn();
+    await renderScreen(repo, onClose);
+
+    const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
+    fireEvent.changeText(titleInput, 'ITV del coche');
+    await screen.findByDisplayValue('ITV del coche');
+
+    expect(screen.getByText(/tus avisos ya han pasado/)).toBeTruthy();
+
+    // Non-blocking: saving still works despite the hint.
+    fireEvent.press(screen.getByText('Guardar'));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(await repo.findById('fixed-id')).not.toBeNull();
+  });
+
+  it('hides the empty-plan hint when no reminders are selected', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    await renderScreen(repo);
+    await screen.findByPlaceholderText('Ej. ITV del coche');
+
+    expect(screen.getByText(/tus avisos ya han pasado/)).toBeTruthy(); // default today + [30, 7]
+
+    fireEvent.press(screen.getByText('30 días')); // deselect 30 → [7] (still all past)
+    await screen.findByText(/tus avisos ya han pasado/);
+    fireEvent.press(screen.getByText('7 días')); // deselect 7 → [] (no reminders)
+
+    await waitFor(() => expect(screen.queryByText(/tus avisos ya han pasado/)).toBeNull());
   });
 });

@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { DeadlineRepository } from '../../ports/deadline-repository';
 import { createDeadlineRepository } from '../../infrastructure/persistence/sqlite/create-deadline-repository';
-import { seedDeadlinesIfEmpty } from '../../infrastructure/dev/seed-deadlines';
 import { Loading } from '../components/Loading';
 
 const RepositoryContext = createContext<DeadlineRepository | null>(null);
@@ -20,7 +19,6 @@ export function RepositoryProvider({ repository, children }: RepositoryProviderP
     let cancelled = false;
     void (async () => {
       const repo = await createDeadlineRepository();
-      await seedDeadlinesIfEmpty(repo);
       if (!cancelled) setBuilt(repo);
     })();
     return () => {

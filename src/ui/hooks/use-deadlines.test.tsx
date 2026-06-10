@@ -36,4 +36,15 @@ describe('useDeadlines', () => {
     });
     expect(result.current.groups.NEEDS_ATTENTION).toHaveLength(1);
   });
+
+  it('exposes storedCount including resolved/cancelled deadlines', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: 'a', status: 'RESOLVED' }),
+      buildDeadline({ id: 'b', status: 'CANCELLED' }),
+    ]);
+    const { result } = await renderHook(() => useDeadlines(), { wrapper: wrapper(repo) });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.storedCount).toBe(2);
+    expect(result.current.groups.NEEDS_ATTENTION).toHaveLength(0); // both excluded from groups
+  });
 });

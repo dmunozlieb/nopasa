@@ -21,8 +21,20 @@ CREATE TABLE deadlines (
 );
 `;
 
+const CREATE_SETTINGS_TABLE_SQL = `
+CREATE TABLE settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  reminder_hour INTEGER NOT NULL,
+  reminder_minute INTEGER NOT NULL,
+  default_reminder_days_before TEXT NOT NULL
+);
+`;
+
 /**
  * Ordered list of forward migrations. Adding a migration is ADDITIVE: append a new
  * entry with the next version and never edit an existing one.
  */
-export const MIGRATIONS: Migration[] = [{ version: 1, sql: CREATE_DEADLINES_TABLE_SQL }];
+export const MIGRATIONS: Migration[] = [
+  { version: 1, sql: CREATE_DEADLINES_TABLE_SQL },
+  { version: 2, sql: CREATE_SETTINGS_TABLE_SQL },
+];
