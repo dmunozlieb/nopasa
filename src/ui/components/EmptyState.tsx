@@ -5,18 +5,39 @@ import { colors, fontSizes, radii, spacing } from '../theme';
 import { AppText } from './AppText';
 import { Button } from './Button';
 
+type EmptyStateVariant = 'first-use' | 'all-caught-up';
+
 interface EmptyStateProps {
+  variant: EmptyStateVariant;
   onAdd: () => void;
   onOpenSettings: () => void;
 }
 
+const COPY: Record<EmptyStateVariant, { headline: string; support: string; cta: string }> = {
+  'first-use': {
+    headline: 'Aquí no se te pasará nada',
+    support:
+      'Guarda tus documentos y fechas importantes —DNI, ITV, seguros, suscripciones— y te avisamos antes de que caduquen.',
+    cta: 'Añadir mi primer vencimiento',
+  },
+  'all-caught-up': {
+    headline: 'Todo en orden',
+    support: 'No tienes vencimientos pendientes. Te avisaremos cuando se acerque alguno.',
+    cta: 'Añadir un vencimiento',
+  },
+};
+
 /**
- * First-use empty state (docs/design/Primer uso.png).
- * NOTE (future session): copy assumes first use; it also shows when all deadlines
- * are resolved. Distinguishing "first use" from "all caught up" is out of scope now.
+ * Empty state with two data-driven variants:
+ * - 'first-use': nothing stored yet (matches docs/design/Primer uso.png).
+ * - 'all-caught-up': deadlines exist but none are active (all resolved/cancelled).
+ * The home picks the variant from data; this component is presentational. Both keep the
+ * settings gear so the user is never stranded with no way back to settings.
  */
-export function EmptyState({ onAdd, onOpenSettings }: EmptyStateProps) {
+export function EmptyState({ variant, onAdd, onOpenSettings }: EmptyStateProps) {
   const insets = useSafeAreaInsets();
+  const copy = COPY[variant];
+  const isFirstUse = variant === 'first-use';
   return (
     <View style={[styles.root, { paddingTop: spacing.xl + insets.top, paddingBottom: spacing.xl + insets.bottom }]}>
       <Pressable
@@ -33,37 +54,47 @@ export function EmptyState({ onAdd, onOpenSettings }: EmptyStateProps) {
       </AppText>
 
       <View style={styles.center}>
-        <View style={styles.illustration}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="calendar-blank" size={48} color={colors.brandBlue} />
+        {isFirstUse ? (
+          <View style={styles.illustration}>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons name="calendar-blank" size={48} color={colors.brandBlue} />
+            </View>
+            <View style={[styles.badge, styles.badgeCheck]}>
+              <MaterialCommunityIcons name="check" size={16} color={colors.white} />
+            </View>
+            <View style={[styles.badge, styles.badgeDoc]}>
+              <MaterialCommunityIcons name="file-document-outline" size={18} color={colors.urgency.upcoming.base} />
+            </View>
+            <View style={[styles.badge, styles.badgeShield]}>
+              <MaterialCommunityIcons name="shield-check" size={18} color={colors.urgency.urgent.base} />
+            </View>
           </View>
-          <View style={[styles.badge, styles.badgeCheck]}>
-            <MaterialCommunityIcons name="check" size={16} color={colors.white} />
+        ) : (
+          <View style={styles.illustration}>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons name="calendar-check" size={48} color={colors.urgency.calm.base} />
+            </View>
           </View>
-          <View style={[styles.badge, styles.badgeDoc]}>
-            <MaterialCommunityIcons name="file-document-outline" size={18} color={colors.urgency.upcoming.base} />
-          </View>
-          <View style={[styles.badge, styles.badgeShield]}>
-            <MaterialCommunityIcons name="shield-check" size={18} color={colors.urgency.urgent.base} />
-          </View>
-        </View>
+        )}
 
         <AppText weight="black" size={fontSizes.h1} style={styles.headline}>
-          Aquí no se te pasará nada
+          {copy.headline}
         </AppText>
         <AppText weight="semibold" size={fontSizes.body} color={colors.textMuted} style={styles.support}>
-          Guarda tus documentos y fechas importantes —DNI, ITV, seguros, suscripciones— y te avisamos antes de que caduquen.
+          {copy.support}
         </AppText>
       </View>
 
       <View style={styles.footer}>
-        <Button label="Añadir mi primer vencimiento" icon="plus" onPress={onAdd} />
-        <View style={styles.privacy}>
-          <MaterialCommunityIcons name="lock-outline" size={14} color={colors.urgency.calm.base} />
-          <AppText weight="semibold" size={fontSizes.small} color={colors.urgency.calm.base}>
-            Se lee en tu móvil. Nada se sube a internet.
-          </AppText>
-        </View>
+        <Button label={copy.cta} icon="plus" onPress={onAdd} />
+        {isFirstUse ? (
+          <View style={styles.privacy}>
+            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.urgency.calm.base} />
+            <AppText weight="semibold" size={fontSizes.small} color={colors.urgency.calm.base}>
+              Se lee en tu móvil. Nada se sube a internet.
+            </AppText>
+          </View>
+        ) : null}
       </View>
     </View>
   );
