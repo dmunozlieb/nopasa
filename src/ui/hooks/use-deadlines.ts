@@ -9,6 +9,9 @@ export interface UseDeadlinesResult {
   status: DeadlinesStatus;
   groups: GroupedDeadlines;
   today: Date;
+  /** Number of deadlines stored, all statuses (0 while loading). Lets the home tell
+   *  "first use" (empty store) apart from "all caught up" (stored but none active). */
+  storedCount: number;
   error: unknown;
   refresh: () => Promise<void>;
 }
@@ -44,5 +47,5 @@ export function useDeadlines(): UseDeadlinesResult {
     [status, list, today],
   );
 
-  return { status, groups, today, error, refresh };
+  return { status, groups, today, storedCount: list.length, error, refresh };
 }
