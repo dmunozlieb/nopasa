@@ -13,7 +13,6 @@
     },
     "android": {
       "package": "com.danapps.nopasa",
-      "versionCode": 1,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.CAMERA"
@@ -61,8 +60,7 @@
           "cameraPermission": "Permite a Nopasa hacer una foto del documento para leer la fecha por ti.",
           "recordAudioAndroid": false
         }
-      ],
-      "./plugins/with-mlkit-ocr-model"
+      ]
     ],
     "extra": {
       "router": {},
