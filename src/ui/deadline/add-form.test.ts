@@ -64,4 +64,14 @@ describe('toCreateInput', () => {
     expect(input.subtitle).toBeUndefined();
     expect(input.dueDate).toEqual(new Date(2026, 5, 8));
   });
+
+  it('includes photoUri in the output when provided', () => {
+    const input = toCreateInput(baseState(), 'file:///tmp/photo.jpg');
+    expect(input.photoUri).toBe('file:///tmp/photo.jpg');
+  });
+
+  it('omits photoUri from the output when not provided', () => {
+    const input = toCreateInput(baseState());
+    expect('photoUri' in input).toBe(false);
+  });
 });

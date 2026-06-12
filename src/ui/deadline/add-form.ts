@@ -41,8 +41,9 @@ export function parseAmount(raw: string): number | undefined {
 }
 
 /** Maps validated form state to the domain factory input. Omits empty optionals;
- *  normalizes dueDate to local midnight; sorts reminders ascending. */
-export function toCreateInput(state: AddFormState): CreateDeadlineInput {
+ *  normalizes dueDate to local midnight; sorts reminders ascending.
+ *  Pass `photoUri` to include the captured photo path in the returned input. */
+export function toCreateInput(state: AddFormState, photoUri?: string): CreateDeadlineInput {
   const subtitle = state.subtitle.trim();
   return {
     type: state.type,
@@ -51,5 +52,6 @@ export function toCreateInput(state: AddFormState): CreateDeadlineInput {
     dueDate: startOfDay(state.dueDate),
     amount: parseAmount(state.amount),
     reminderDaysBefore: [...state.reminderDaysBefore].sort((a, b) => a - b),
+    ...(photoUri !== undefined ? { photoUri } : {}),
   };
 }
