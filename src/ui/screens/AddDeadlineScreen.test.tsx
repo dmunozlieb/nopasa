@@ -3,9 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
 import { InMemorySettingsRepository } from '../../test-support/in-memory-settings-repository';
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
+import { FakePhotoStore } from '../../test-support/fake-photo-store';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
+import { PhotoStoreProvider } from '../photo-store/photo-store-context';
 import { SettingsProvider } from '../settings/settings-context';
 import { AddDeadlineScreen } from './AddDeadlineScreen';
 
@@ -18,9 +20,11 @@ function renderScreen(
     <RepositoryProvider repository={repo}>
       <DeadlineDepsProvider generateId={() => 'fixed-id'} clock={{ now: () => new Date(2026, 5, 8) }}>
         <NotificationSchedulerProvider scheduler={new FakeNotificationScheduler()}>
-          <SettingsProvider repository={settingsRepo}>
-            <AddDeadlineScreen onClose={onClose} />
-          </SettingsProvider>
+          <PhotoStoreProvider store={new FakePhotoStore()}>
+            <SettingsProvider repository={settingsRepo}>
+              <AddDeadlineScreen onClose={onClose} />
+            </SettingsProvider>
+          </PhotoStoreProvider>
         </NotificationSchedulerProvider>
       </DeadlineDepsProvider>
     </RepositoryProvider>,
