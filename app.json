@@ -61,7 +61,8 @@
           "cameraPermission": "Permite a Nopasa hacer una foto del documento para leer la fecha por ti.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "./plugins/with-mlkit-ocr-model"
     ],
     "extra": {
       "router": {},
