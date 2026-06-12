@@ -14,7 +14,10 @@
     "android": {
       "package": "com.danapps.nopasa",
       "versionCode": 1,
-      "permissions": ["android.permission.POST_NOTIFICATIONS"],
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA"
+      ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -51,7 +54,20 @@
           "imageWidth": 200,
           "resizeMode": "contain"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permite a Nopasa hacer una foto del documento para leer la fecha por ti.",
+          "recordAudioAndroid": false
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "46b624fc-d355-4ff5-bf09-c9d1b432a460"
+      }
+    }
   }
 }
