@@ -67,3 +67,12 @@ jest.mock('expo-sharing', () => ({
   isAvailableAsync: jest.fn(async () => true),
   shareAsync: jest.fn(async () => undefined),
 }));
+
+// Mock expo-text-extractor: the native ML Kit/Vision module can't load under jsdom.
+// Inert default (no recognized lines) keeps the adapter/provider importable; the adapter's
+// own test overrides the return value, and screen tests inject FakeTextRecognizer.
+jest.mock('expo-text-extractor', () => ({
+  __esModule: true,
+  isSupported: true,
+  extractTextFromImage: jest.fn(async () => []),
+}));
