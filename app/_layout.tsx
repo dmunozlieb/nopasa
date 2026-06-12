@@ -37,7 +37,10 @@ export default function RootLayout() {
                 <SettingsProvider>
                   <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="index" />
-                    <Stack.Screen name="add" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="add/index" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="add/manual" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="add/camera" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="add/confirm" options={{ presentation: 'modal' }} />
                     <Stack.Screen name="deadline/[id]" options={{ presentation: 'modal' }} />
                     <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
                     <Stack.Screen name="privacy" options={{ presentation: 'modal' }} />
