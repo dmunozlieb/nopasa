@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { daysRemaining, urgencyLevel } from '../../domain/deadline/urgency';
@@ -86,6 +86,10 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
           </View>
         </View>
 
+        {deadline.photoUri ? (
+          <Image testID="deadline-detail-photo" source={{ uri: deadline.photoUri }} style={styles.photo} resizeMode="cover" />
+        ) : null}
+
         <DetailStatusBlock
           urgency={urgency}
           headline={headline}
@@ -134,4 +138,5 @@ const styles = StyleSheet.create({
   manageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl, backgroundColor: colors.screenBg },
   centeredText: { textAlign: 'center' },
+  photo: { width: '100%', height: 200, borderRadius: radii.card, backgroundColor: colors.surfaceSoft },
 });

@@ -29,7 +29,7 @@ describe('DeadlineDetailScreen', () => {
         type: 'ITV',
         title: 'ITV — Clio',
         subtitle: 'Inspección técnica del coche',
-        dueDate: new Date(2026, 5, 11),
+        dueDate: new Date(2027, 5, 11),
         amount: 200,
         amountLabel: 'multa 200 €',
       }),
@@ -89,5 +89,20 @@ describe('DeadlineDetailScreen', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect((await repo.findById('2'))?.status).toBe('CANCELLED');
     expect(scheduler.cancelled).toEqual(['2']);
+  });
+
+  it('shows the photo thumbnail when the deadline has a photoUri', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '9', type: 'ITV', title: 'ITV — Clio', photoUri: 'file:///document/photos/x.jpg' }),
+    ]);
+    await renderWith(repo, '9');
+    expect(await screen.findByTestId('deadline-detail-photo')).toBeTruthy();
+  });
+
+  it('shows no thumbnail when there is no photoUri', async () => {
+    const repo = new InMemoryDeadlineRepository([buildDeadline({ id: '10', type: 'ITV', title: 'ITV — Clio' })]);
+    await renderWith(repo, '10');
+    await screen.findByText('ITV — Clio');
+    expect(screen.queryByTestId('deadline-detail-photo')).toBeNull();
   });
 });
