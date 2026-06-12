@@ -397,9 +397,9 @@ The screen currently is a thin wrapper: `return <DeadlineForm heading="Confirma 
 - When `recognized?.text` is non-empty, render a **temporary** "Texto detectado" preview (clearly labeled, `testID="detected-text"`) — Block 3 replaces it with real field prefill. `DeadlineForm` stays **unchanged**, so the preview is a sibling rendered ABOVE the form (capped height, internally scrollable).
 - Use a mounted-guard ref so a late OCR resolution after unmount/cancel doesn't `setState`.
 
-`OCR_TIMEOUT_MS = 8000` (named constant in this file).
+`OCR_TIMEOUT_MS = 8000` (named constant, the default). The screen takes an optional **`timeoutMs?: number`** prop (defaults to `OCR_TIMEOUT_MS`) so a test can inject a tiny timeout. The route (`app/add/confirm.tsx`) passes only `photoUri`/`onClose`, so it uses the default — no route change.
 
-**Note on the timeout test:** the screen treats a timeout exactly like any rejection (`withTimeout` rejects → caught → form renders empty). Timeout firing is proven by `with-timeout.test.ts` (Task 4); the screen's "renders the form when OCR fails" test covers the rejection→form path. No fake-timer screen test needed.
+**Timeout coverage:** two complementary tests. (a) `with-timeout.test.ts` (Task 4) proves the timer fires with fake timers. (b) A **screen-level** test injects a small `timeoutMs` and a recognizer whose `recognize()` **never resolves**, proving the real `withTimeout` fallback path (timeout → caught → form renders) end-to-end — so the wrapper is actually verified, not assumed. (Real timers, ~20ms, `waitFor`.)
 
 - [ ] **Step 1: Update the existing test + add new ones** (`src/ui/screens/ConfirmDeadlineScreen.test.tsx`). The Block-1 regression test must now (a) wrap in `TextRecognizerProvider`, and (b) `await` the form past the loading gate. Full file:
 
@@ -410,7 +410,7 @@ import { InMemorySettingsRepository } from '../../test-support/in-memory-setting
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
 import { FakePhotoStore } from '../../test-support/fake-photo-store';
 import { FakeTextRecognizer } from '../../test-support/fake-text-recognizer';
-import type { RecognizedText } from '../../ports/text-recognizer';
+import type { RecognizedText, TextRecognizer } from '../../ports/text-recognizer';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
@@ -422,7 +422,8 @@ import { ConfirmDeadlineScreen } from './ConfirmDeadlineScreen';
 function renderConfirm(opts: {
   repo?: InMemoryDeadlineRepository;
   photoStore?: FakePhotoStore;
-  recognizer?: FakeTextRecognizer;
+  recognizer?: TextRecognizer;
+  timeoutMs?: number;
   onClose?: () => void;
 }) {
   const repo = opts.repo ?? new InMemoryDeadlineRepository();
@@ -440,7 +441,7 @@ function renderConfirm(opts: {
             <PhotoStoreProvider store={photoStore}>
               <TextRecognizerProvider recognizer={recognizer}>
                 <SettingsProvider repository={new InMemorySettingsRepository()}>
-                  <ConfirmDeadlineScreen photoUri="file:///cache/cam.jpg" onClose={onClose} />
+                  <ConfirmDeadlineScreen photoUri="file:///cache/cam.jpg" onClose={onClose} timeoutMs={opts.timeoutMs} />
                 </SettingsProvider>
               </TextRecognizerProvider>
             </PhotoStoreProvider>
@@ -498,6 +499,15 @@ describe('ConfirmDeadlineScreen', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(await repo.findById('fixed-id')).not.toBeNull();
   });
+
+  it('falls back to the form when OCR hangs past the timeout (real withTimeout path)', async () => {
+    // A recognizer whose promise never settles — only the injected timeout can resolve the screen.
+    const hanging: TextRecognizer = { recognize: () => new Promise<RecognizedText>(() => {}) };
+    renderConfirm({ recognizer: hanging, timeoutMs: 20 });
+
+    expect(await screen.findByPlaceholderText('Ej. ITV del coche')).toBeTruthy();
+    expect(screen.queryByTestId('detected-text')).toBeNull();
+  });
 });
 ```
 
@@ -521,6 +531,8 @@ const OCR_TIMEOUT_MS = 8000;
 interface ConfirmDeadlineScreenProps {
   photoUri: string;
   onClose: () => void;
+  /** OCR deadline in ms; injectable for tests. Defaults to OCR_TIMEOUT_MS. */
+  timeoutMs?: number;
 }
 
 /**
@@ -531,7 +543,7 @@ interface ConfirmDeadlineScreenProps {
  * In Block 2 initialValues stays empty; the recognized text is only shown in a temporary
  * "Texto detectado" preview to verify OCR on real documents (Block 3 replaces it).
  */
-export function ConfirmDeadlineScreen({ photoUri, onClose }: ConfirmDeadlineScreenProps) {
+export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEOUT_MS }: ConfirmDeadlineScreenProps) {
   const recognizer = useTextRecognizer();
   const insets = useSafeAreaInsets();
   const [reading, setReading] = useState(true);
@@ -541,7 +553,7 @@ export function ConfirmDeadlineScreen({ photoUri, onClose }: ConfirmDeadlineScre
     const mounted = { current: true };
     (async () => {
       try {
-        const result = await withTimeout(recognizer.recognize(photoUri), OCR_TIMEOUT_MS);
+        const result = await withTimeout(recognizer.recognize(photoUri), timeoutMs);
         if (mounted.current) setRecognized(result);
       } catch {
         // Best-effort: OCR failure / timeout never blocks the manual path.
@@ -553,7 +565,7 @@ export function ConfirmDeadlineScreen({ photoUri, onClose }: ConfirmDeadlineScre
     return () => {
       mounted.current = false;
     };
-  }, [recognizer, photoUri]);
+  }, [recognizer, photoUri, timeoutMs]);
 
   if (reading) {
     return (
