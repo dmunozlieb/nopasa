@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { RecognizedText } from '../../ports/text-recognizer';
+import type { AddFormState } from '../deadline/add-form';
+import { parseDeadlineHints } from '../../domain/ocr-parsing/parse-deadline-hints';
+import { hintsToInitialValues } from '../deadline/hints-to-initial-values';
 import { useTextRecognizer } from '../text-recognizer/text-recognizer-context';
+import { useDeadlineDeps } from '../deadline-deps/deadline-deps-context';
 import { withTimeout } from '../ocr/with-timeout';
 import { DeadlineForm } from '../components/DeadlineForm';
 import { AppText } from '../components/AppText';
@@ -19,17 +22,18 @@ interface ConfirmDeadlineScreenProps {
 
 /**
  * Confirm screen for the photo path. Runs on-device OCR over the photo (best-effort,
- * with a timeout), then renders the shared DeadlineForm. Rendering the form only after
+ * with a timeout), parses the recognized text into form prefill (DeadlineHints →
+ * initialValues), then renders the shared DeadlineForm. Rendering the form only after
  * OCR resolves is intentional: DeadlineForm seeds its state once from initialValues, so
- * the recognized text (parsed into initialValues in Block 3) must be ready beforehand.
- * In Block 2 initialValues stays empty; the recognized text is only shown in a temporary
- * "Texto detectado" preview to verify OCR on real documents (Block 3 replaces it).
+ * the parsed values must be ready beforehand. OCR failure/timeout/empty leaves
+ * initialValues empty — the manual path is never blocked.
  */
 export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEOUT_MS }: ConfirmDeadlineScreenProps) {
   const recognizer = useTextRecognizer();
+  const { clock } = useDeadlineDeps();
   const insets = useSafeAreaInsets();
   const [reading, setReading] = useState(true);
-  const [recognized, setRecognized] = useState<RecognizedText | null>(null);
+  const [initialValues, setInitialValues] = useState<Partial<AddFormState>>({});
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -37,10 +41,12 @@ export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEO
     (async () => {
       try {
         const result = await withTimeout(recognizer.recognize(photoUri), timeoutMs);
-        if (mountedRef.current) setRecognized(result);
+        if (mountedRef.current) {
+          const hints = parseDeadlineHints(result, { now: clock.now() });
+          setInitialValues(hintsToInitialValues(hints));
+        }
       } catch {
-        // Best-effort: OCR failure / timeout never blocks the manual path.
-        if (mountedRef.current) setRecognized(null);
+        // Best-effort: OCR failure / timeout never blocks the manual path (initialValues stays empty).
       } finally {
         if (mountedRef.current) setReading(false);
       }
@@ -48,7 +54,7 @@ export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEO
     return () => {
       mountedRef.current = false;
     };
-  }, [recognizer, photoUri, timeoutMs]);
+  }, [recognizer, photoUri, timeoutMs, clock]);
 
   if (reading) {
     return (
@@ -64,42 +70,16 @@ export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEO
     );
   }
 
-  const detected = recognized?.text?.trim();
-
   return (
     <View style={styles.container}>
-      {detected ? (
-        <View style={styles.detected} testID="detected-text">
-          <AppText weight="bold" size={fontSizes.small} color={colors.textMuted}>
-            Texto detectado · temporal (bloque 2)
-          </AppText>
-          <ScrollView style={styles.detectedScroll}>
-            <AppText weight="semibold" size={fontSizes.small} color={colors.textSecondary}>
-              {recognized?.text}
-            </AppText>
-          </ScrollView>
-        </View>
-      ) : null}
-      <View style={styles.formSlot}>
-        <DeadlineForm heading="Confirma los datos" photoUri={photoUri} onClose={onClose} />
-      </View>
+      <DeadlineForm heading="Confirma los datos" photoUri={photoUri} initialValues={initialValues} onClose={onClose} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.screenBg },
-  formSlot: { flex: 1 },
   root: { flex: 1, backgroundColor: colors.screenBg, borderTopLeftRadius: radii.card, borderTopRightRadius: radii.card },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: radii.pill, backgroundColor: colors.textFaint, opacity: 0.4 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-  detected: {
-    maxHeight: 160,
-    margin: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: radii.card,
-    backgroundColor: colors.surfaceSoft,
-    gap: spacing.sm,
-  },
-  detectedScroll: { flexGrow: 0 },
 });

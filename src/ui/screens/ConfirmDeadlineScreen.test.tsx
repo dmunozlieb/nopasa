@@ -45,14 +45,16 @@ async function renderConfirm(opts: {
 const recognized = (result: RecognizedText) => new FakeTextRecognizer({ result });
 
 describe('ConfirmDeadlineScreen', () => {
-  it('runs OCR over the photo, then renders the form and a temporary detected-text preview', async () => {
-    const recognizer = recognized({ text: 'ITV del coche\nCaduca 11/06/2027', lines: ['ITV del coche', 'Caduca 11/06/2027'] });
-    const { recognizer: rec } = await renderConfirm({ recognizer });
+  it('prefills type and due date from the recognized text', async () => {
+    const recognizer = recognized({
+      text: 'SEGURO DE HOGAR\nVencimiento 11/06/2027',
+      lines: ['SEGURO DE HOGAR', 'Vencimiento 11/06/2027'],
+    });
+    await renderConfirm({ recognizer });
 
-    expect(await screen.findByPlaceholderText('Ej. ITV del coche')).toBeTruthy();
-    expect((rec as FakeTextRecognizer).calls).toEqual(['file:///cache/cam.jpg']);
-    expect(screen.getByTestId('detected-text')).toBeTruthy();
-    expect(screen.getByText(/Caduca 11\/06\/2027/)).toBeTruthy();
+    expect(await screen.findByDisplayValue('Seguro')).toBeTruthy();
+    expect(screen.getByDisplayValue('Póliza de seguro')).toBeTruthy();
+    expect(screen.getByText('11 jun 2027')).toBeTruthy();
   });
 
   it('still shows the thumbnail and saves with the stable photoUri (Block 1 regression)', async () => {
@@ -68,10 +70,10 @@ describe('ConfirmDeadlineScreen', () => {
     expect((await repo.findById('fixed-id'))?.photoUri).toBe('stable:///0.jpg');
   });
 
-  it('renders the form (no preview) when OCR returns empty text', async () => {
+  it('renders a blank form when OCR returns empty text', async () => {
     await renderConfirm({ recognizer: recognized({ text: '', lines: [] }) });
-    expect(await screen.findByPlaceholderText('Ej. ITV del coche')).toBeTruthy();
-    expect(screen.queryByTestId('detected-text')).toBeNull();
+    const title = await screen.findByPlaceholderText('Ej. ITV del coche');
+    expect(title.props.value).toBe('');
   });
 
   it('renders the form and allows manual save when OCR fails (best-effort)', async () => {
@@ -79,9 +81,7 @@ describe('ConfirmDeadlineScreen', () => {
     const recognizer = new FakeTextRecognizer({ error: new Error('ocr failed') });
     const { repo } = await renderConfirm({ recognizer, onClose });
 
-    expect(await screen.findByPlaceholderText('Ej. ITV del coche')).toBeTruthy();
-    expect(screen.queryByTestId('detected-text')).toBeNull();
-    fireEvent.changeText(screen.getByPlaceholderText('Ej. ITV del coche'), 'Manual');
+    fireEvent.changeText(await screen.findByPlaceholderText('Ej. ITV del coche'), 'Manual');
     await screen.findByDisplayValue('Manual');
     fireEvent.press(screen.getByText('Guardar'));
 
@@ -94,6 +94,5 @@ describe('ConfirmDeadlineScreen', () => {
     await renderConfirm({ recognizer: hanging, timeoutMs: 20 });
 
     expect(await screen.findByPlaceholderText('Ej. ITV del coche')).toBeTruthy();
-    expect(screen.queryByTestId('detected-text')).toBeNull();
   });
 });
