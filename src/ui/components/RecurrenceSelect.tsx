@@ -21,7 +21,8 @@ const PRESETS: Preset[] = [
   { label: 'Cada 2 años', months: 24 },
 ];
 
-const PRESET_MONTHS = [1, 12, 24];
+/** Derived from PRESETS so a new preset can't silently drift from this list. */
+const PRESET_MONTHS = PRESETS.map((p) => p.months).filter((m): m is number => m !== undefined);
 
 /** Friendly recurrence presets plus a custom "N months" escape hatch. The active
  *  chip is derived from `value`; a local `custom` flag distinguishes "Personalizado

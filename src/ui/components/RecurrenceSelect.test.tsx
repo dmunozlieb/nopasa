@@ -47,4 +47,12 @@ describe('RecurrenceSelect', () => {
     await render(<RecurrenceSelect value={3} onChange={() => {}} />);
     expect(screen.getByTestId('recurrence-custom-input')).toBeTruthy();
   });
+
+  it('collapses the custom field when a preset is selected after custom mode', async () => {
+    await render(<RecurrenceSelect value={undefined} onChange={() => {}} />);
+    fireEvent.press(screen.getByText('Personalizado'));
+    expect(await screen.findByTestId('recurrence-custom-input')).toBeTruthy();
+    fireEvent.press(screen.getByText('Cada mes'));
+    expect(screen.queryByTestId('recurrence-custom-input')).toBeNull();
+  });
 });
