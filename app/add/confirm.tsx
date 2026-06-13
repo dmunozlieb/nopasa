@@ -4,5 +4,5 @@ import { ConfirmDeadlineScreen } from '../../src/ui/screens/ConfirmDeadlineScree
 export default function AddConfirmRoute() {
   const router = useRouter();
   const { photoUri } = useLocalSearchParams<{ photoUri: string }>();
-  return <ConfirmDeadlineScreen photoUri={decodeURIComponent(photoUri ?? '')} onClose={() => router.back()} />;
+  return <ConfirmDeadlineScreen photoUri={decodeURIComponent(photoUri ?? '')} onSaved={() => router.dismissAll()} />;
 }

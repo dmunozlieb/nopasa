@@ -41,17 +41,20 @@ export function parseAmount(raw: string): number | undefined {
   return n;
 }
 
-/** Largest recurrence we accept; guards against absurd custom input. */
-export const MAX_RECURRENCE_MONTHS = 999;
+/** Largest recurrence we accept (≈50 years); guards against absurd custom input. */
+export const MAX_RECURRENCE_MONTHS = 600;
 
-/** Parses the raw custom-recurrence text. Accepts a positive integer up to the cap;
- *  returns undefined for empty, non-numeric, zero, negative, fractional or over-cap. */
-export function parseRecurrenceMonths(raw: string): number | undefined {
+/** Parses raw custom-recurrence text in the given unit (default months). Accepts a
+ *  positive integer; returns the value in MONTHS (years × 12), or undefined for empty,
+ *  non-numeric, zero, negative, fractional, or over-cap input. */
+export function parseRecurrenceMonths(raw: string, unit: 'months' | 'years' = 'months'): number | undefined {
   const trimmed = raw.trim();
   if (trimmed === '') return undefined;
   const n = Number(trimmed);
-  if (!Number.isInteger(n) || n <= 0 || n > MAX_RECURRENCE_MONTHS) return undefined;
-  return n;
+  if (!Number.isInteger(n) || n <= 0) return undefined;
+  const months = unit === 'years' ? n * 12 : n;
+  if (months > MAX_RECURRENCE_MONTHS) return undefined;
+  return months;
 }
 
 /** Maps validated form state to the domain factory input. Omits empty optionals;

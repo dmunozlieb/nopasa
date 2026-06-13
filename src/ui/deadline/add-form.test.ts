@@ -42,17 +42,29 @@ describe('parseAmount', () => {
 });
 
 describe('parseRecurrenceMonths', () => {
-  it('parses a positive integer', () => {
+  it('parses a positive integer as months by default', () => {
     expect(parseRecurrenceMonths('3')).toBe(3);
+    expect(parseRecurrenceMonths('600')).toBe(600);
   });
-  it('returns undefined for empty, non-numeric, zero, negative, fractional or over-cap', () => {
+  it('parses a value in years to months', () => {
+    expect(parseRecurrenceMonths('5', 'years')).toBe(60);
+    expect(parseRecurrenceMonths('10', 'years')).toBe(120);
+    expect(parseRecurrenceMonths('50', 'years')).toBe(600);
+  });
+  it('returns undefined for empty, non-numeric, zero, negative or fractional', () => {
     expect(parseRecurrenceMonths('')).toBeUndefined();
     expect(parseRecurrenceMonths('  ')).toBeUndefined();
     expect(parseRecurrenceMonths('abc')).toBeUndefined();
     expect(parseRecurrenceMonths('0')).toBeUndefined();
     expect(parseRecurrenceMonths('-3')).toBeUndefined();
     expect(parseRecurrenceMonths('1.5')).toBeUndefined();
+    expect(parseRecurrenceMonths('2.5', 'years')).toBeUndefined();
+    expect(parseRecurrenceMonths('0', 'years')).toBeUndefined();
+  });
+  it('returns undefined when the resulting months exceed the cap', () => {
+    expect(parseRecurrenceMonths('601')).toBeUndefined();
     expect(parseRecurrenceMonths('1000')).toBeUndefined();
+    expect(parseRecurrenceMonths('51', 'years')).toBeUndefined(); // 612 > 600
   });
 });
 

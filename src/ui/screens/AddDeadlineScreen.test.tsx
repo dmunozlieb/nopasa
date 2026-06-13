@@ -13,7 +13,7 @@ import { AddDeadlineScreen } from './AddDeadlineScreen';
 
 function renderScreen(
   repo: InMemoryDeadlineRepository,
-  onClose: () => void = () => {},
+  onSaved: () => void = () => {},
   settingsRepo: InMemorySettingsRepository = new InMemorySettingsRepository(),
 ) {
   return render(
@@ -22,7 +22,7 @@ function renderScreen(
         <NotificationSchedulerProvider scheduler={new FakeNotificationScheduler()}>
           <PhotoStoreProvider store={new FakePhotoStore()}>
             <SettingsProvider repository={settingsRepo}>
-              <AddDeadlineScreen onClose={onClose} />
+              <AddDeadlineScreen onSaved={onSaved} />
             </SettingsProvider>
           </PhotoStoreProvider>
         </NotificationSchedulerProvider>
@@ -37,8 +37,8 @@ function renderScreen(
 describe('AddDeadlineScreen', () => {
   it('fills the form and saves: persists the deadline and closes (integration)', async () => {
     const repo = new InMemoryDeadlineRepository();
-    const onClose = jest.fn();
-    await renderScreen(repo, onClose);
+    const onSaved = jest.fn();
+    await renderScreen(repo, onSaved);
 
     const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
     fireEvent.changeText(titleInput, 'Pasaporte de Ana');
@@ -47,7 +47,7 @@ describe('AddDeadlineScreen', () => {
     await screen.findByDisplayValue('Documento para viajar fuera de la UE');
     fireEvent.press(screen.getByText('Guardar'));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     const saved = await repo.findById('fixed-id');
     expect(saved).toMatchObject({
       id: 'fixed-id',
@@ -63,8 +63,8 @@ describe('AddDeadlineScreen', () => {
 
   it('does not save and shows a hint when the title is empty', async () => {
     const repo = new InMemoryDeadlineRepository();
-    const onClose = jest.fn();
-    await renderScreen(repo, onClose);
+    const onSaved = jest.fn();
+    await renderScreen(repo, onSaved);
 
     // Touch the title field and leave it empty to reveal the hint.
     const title = await screen.findByPlaceholderText('Ej. ITV del coche');
@@ -74,7 +74,7 @@ describe('AddDeadlineScreen', () => {
 
     expect(await screen.findByText('Ponle un nombre')).toBeTruthy();
     fireEvent.press(screen.getByText('Guardar')); // disabled → no-op
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
     expect(await repo.list()).toHaveLength(0);
   });
 
@@ -82,8 +82,8 @@ describe('AddDeadlineScreen', () => {
     const repo = new InMemoryDeadlineRepository();
     jest.spyOn(repo, 'save').mockRejectedValue(new Error('disk'));
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    const onClose = jest.fn();
-    await renderScreen(repo, onClose);
+    const onSaved = jest.fn();
+    await renderScreen(repo, onSaved);
 
     const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
     fireEvent.changeText(titleInput, 'ITV del coche');
@@ -91,7 +91,7 @@ describe('AddDeadlineScreen', () => {
     fireEvent.press(screen.getByText('Guardar'));
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalled());
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
 
@@ -112,8 +112,8 @@ describe('AddDeadlineScreen', () => {
 
   it('shows the empty-plan hint for an unreachable date and still allows saving', async () => {
     const repo = new InMemoryDeadlineRepository();
-    const onClose = jest.fn();
-    await renderScreen(repo, onClose);
+    const onSaved = jest.fn();
+    await renderScreen(repo, onSaved);
 
     const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
     fireEvent.changeText(titleInput, 'ITV del coche');
@@ -123,14 +123,14 @@ describe('AddDeadlineScreen', () => {
 
     // Non-blocking: saving still works despite the hint.
     fireEvent.press(screen.getByText('Guardar'));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(await repo.findById('fixed-id')).not.toBeNull();
   });
 
   it('persists the chosen recurrence preset (integration)', async () => {
     const repo = new InMemoryDeadlineRepository();
-    const onClose = jest.fn();
-    await renderScreen(repo, onClose);
+    const onSaved = jest.fn();
+    await renderScreen(repo, onSaved);
 
     const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
     fireEvent.changeText(titleInput, 'ITV del coche');
@@ -139,7 +139,7 @@ describe('AddDeadlineScreen', () => {
     await screen.findByText('Cada año');
     fireEvent.press(screen.getByText('Guardar'));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect((await repo.findById('fixed-id'))?.recurrenceMonths).toBe(12);
   });
 

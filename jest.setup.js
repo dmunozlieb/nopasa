@@ -76,3 +76,11 @@ jest.mock('expo-text-extractor', () => ({
   isSupported: true,
   extractTextFromImage: jest.fn(async () => []),
 }));
+
+// Mock expo-document-picker: the native module can't load under jsdom. Inert default
+// (cancelled) keeps the adapter/context importable; tests inject FakeDataImporter.
+jest.mock('expo-document-picker', () => ({
+  __esModule: true,
+  getDocumentAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}));
+

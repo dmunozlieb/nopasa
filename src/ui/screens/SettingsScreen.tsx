@@ -8,8 +8,13 @@ import { useDeadlineRepository } from '../repository/repository-context';
 import { useNotificationScheduler } from '../notification-scheduler/notification-scheduler-context';
 import { useDeadlineDeps } from '../deadline-deps/deadline-deps-context';
 import { useDataExporter } from '../export/data-exporter-context';
+import { useDataImporter } from '../import/data-importer-context';
+import { useMergeImportedDeadlines } from '../hooks/use-merge-imported-deadlines';
+import type { Deadline } from '../../domain/deadline/deadline.schema';
 import { buildDeadlineExport } from '../../domain/export/build-deadline-export';
 import { exportFilename } from '../../domain/export/export-filename';
+import { parseDeadlineImport } from '../../domain/import/parse-deadline-import';
+import { importErrorMessage, importResultMessage } from '../import/import-messages';
 import { AppText } from '../components/AppText';
 import { Card } from '../components/Card';
 import { ComingSoonRow } from '../components/ComingSoonRow';
@@ -32,6 +37,8 @@ export function SettingsScreen({ onClose, onOpenPrivacy }: SettingsScreenProps) 
   const scheduler = useNotificationScheduler();
   const { clock } = useDeadlineDeps();
   const exporter = useDataExporter();
+  const importer = useDataImporter();
+  const mergeImported = useMergeImportedDeadlines();
   const insets = useSafeAreaInsets();
 
   const persist = async (next: Parameters<typeof save>[0]) => {
@@ -58,6 +65,45 @@ export function SettingsScreen({ onClose, onOpenPrivacy }: SettingsScreenProps) 
     } catch {
       Alert.alert('No se pudo exportar', 'Inténtalo de nuevo.');
     }
+  };
+
+  const runImport = async (deadlines: Deadline[], invalidCount: number) => {
+    try {
+      const { imported, alreadyExisted } = await mergeImported(deadlines);
+      Alert.alert('Importación completada', importResultMessage({ imported, alreadyExisted, invalidCount }));
+    } catch {
+      Alert.alert('No se pudo importar', 'Inténtalo de nuevo.');
+    }
+  };
+
+  const importData = async () => {
+    let text: string | null;
+    try {
+      text = await importer.pickAndRead();
+    } catch {
+      Alert.alert('No se pudo importar', 'Inténtalo de nuevo.');
+      return;
+    }
+    if (text === null) return; // cancelled, no-op
+    const { deadlines, invalidCount, schemaError } = parseDeadlineImport(text);
+    if (schemaError) {
+      Alert.alert('No se pudo importar', importErrorMessage(schemaError));
+      return;
+    }
+    if (deadlines.length === 0) {
+      Alert.alert(
+        'No se pudo importar',
+        invalidCount > 0 ? 'No se pudo leer ningún vencimiento válido.' : 'El archivo no contiene vencimientos.',
+      );
+      return;
+    }
+    Alert.alert('Importar', `¿Importar ${deadlines.length} vencimientos?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Importar',
+        onPress: () => { void runImport(deadlines, invalidCount); },
+      },
+    ]);
   };
 
   const deleteAllData = async () => {
@@ -128,6 +174,13 @@ export function SettingsScreen({ onClose, onOpenPrivacy }: SettingsScreenProps) 
             label="Exportar mis datos"
             subtitle="Guarda una copia en tu móvil."
             onPress={() => { void exportData(); }}
+          />
+          <View style={styles.divider} />
+          <NavRow
+            icon="tray-arrow-up"
+            label="Importar mis datos"
+            subtitle="Restaura una copia."
+            onPress={() => { void importData(); }}
           />
           <View style={styles.divider} />
           <NavRow
