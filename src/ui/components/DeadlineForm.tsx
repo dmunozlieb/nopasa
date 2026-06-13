@@ -16,6 +16,7 @@ import { AppText } from './AppText';
 import { Button } from './Button';
 import { DatePickerField } from './DatePickerField';
 import { FormField } from './FormField';
+import { RecurrenceSelect } from './RecurrenceSelect';
 import { ReminderChips } from './ReminderChips';
 import { TypeSelector } from './TypeSelector';
 import { colors, fontSizes, radii, spacing } from '../theme';
@@ -122,6 +123,13 @@ export function DeadlineForm({ heading, photoUri, initialValues, onClose }: Dead
 
         <FormField label="Fecha clave">
           <DatePickerField value={state.dueDate} onChange={(dueDate) => setState((s) => ({ ...s, dueDate }))} />
+        </FormField>
+
+        <FormField label="¿Se repite?">
+          <RecurrenceSelect
+            value={state.recurrenceMonths}
+            onChange={(recurrenceMonths) => setState((s) => ({ ...s, recurrenceMonths }))}
+          />
         </FormField>
 
         <FormField label="Importe (€)">

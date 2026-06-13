@@ -127,6 +127,22 @@ describe('AddDeadlineScreen', () => {
     expect(await repo.findById('fixed-id')).not.toBeNull();
   });
 
+  it('persists the chosen recurrence preset (integration)', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const onClose = jest.fn();
+    await renderScreen(repo, onClose);
+
+    const titleInput = await screen.findByPlaceholderText('Ej. ITV del coche');
+    fireEvent.changeText(titleInput, 'ITV del coche');
+    await screen.findByDisplayValue('ITV del coche');
+    fireEvent.press(screen.getByText('Cada año'));
+    await screen.findByText('Cada año');
+    fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect((await repo.findById('fixed-id'))?.recurrenceMonths).toBe(12);
+  });
+
   it('hides the empty-plan hint when no reminders are selected', async () => {
     const repo = new InMemoryDeadlineRepository();
     await renderScreen(repo);
