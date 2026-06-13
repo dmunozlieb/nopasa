@@ -147,7 +147,12 @@ interface DeadlineImportResult {
 }
 ```
 - `JSON.parse` throws → `{ deadlines: [], invalidCount: 0, schemaError: 'unreadable' }`.
-- Envelope `app !== 'nopasa'` or `schema !== 1` → `{ ..., schemaError: 'unsupported-version' }`.
+- Parsed but `app !== 'nopasa'` (or the envelope is missing / not an object) →
+  `'unreadable'` too. "Not a Nopasa file" reads the same as "couldn't read it" and
+  avoids implying it's a Nopasa file of another version when the user simply picked
+  the wrong file (a common mistake in a restore flow).
+- `app === 'nopasa'` but `schema !== 1` → `'unsupported-version'` — only genuine
+  Nopasa files of another version get the "versión no compatible" message.
 - Otherwise iterate `deadlines[]`: validate each with an import schema =
   `deadlineSchema.extend({ dueDate: z.coerce.date(), createdAt: z.coerce.date() })`.
   Valid → collect; invalid (`safeParse` fails) → `invalidCount++`. Resilient: one
@@ -177,8 +182,9 @@ provider to `app/_layout.tsx` next to `DataExporterProvider`.
 
 **Pure copy helpers** (UI):
 - `importErrorMessage(code: ImportSchemaError): string` — `'unreadable'` → "No pudimos
-  leer el archivo. ¿Seguro que es una copia de Nopasa?"; `'unsupported-version'` →
-  "Este archivo es de una versión no compatible de Nopasa." (final wording at impl).
+  leer el archivo. ¿Seguro que es una copia de Nopasa?" (covers both "didn't parse" and
+  "parsed but isn't a Nopasa file"); `'unsupported-version'` → "Este archivo es de una
+  versión no compatible de Nopasa." (final wording at impl).
 - `importResultMessage({ imported, alreadyExisted, invalidCount }): string` —
   "Importados {imported}", then " · {M} ya existían" only if M > 0, then
   " · {K} no válidos" only if K > 0.
@@ -204,7 +210,7 @@ needed; iOS out of scope. **Requires an EAS rebuild to test on device.**
   same deadlines back, **asserting exact instant equality** on `dueDate`/`createdAt`,
   e.g. `expect(result.deadlines[0].dueDate).toEqual(original.dueDate)` under
   TZ=Europe/Madrid); unknown schema → `'unsupported-version'`, deadlines empty;
-  non-JSON → `'unreadable'`; wrong `app` → `'unsupported-version'`; mixed file with
+  non-JSON → `'unreadable'`; wrong `app` (not Nopasa) → `'unreadable'`; mixed file with
   some corrupt entries → valid collected + `invalidCount` correct; dates are real
   `Date` objects.
 - `useMergeImportedDeadlines` (fakes + clock): existing IDs → `alreadyExisted`, not
