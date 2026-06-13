@@ -1,6 +1,6 @@
 import { normalize } from './normalize-text';
 
-const NUMBER = '\\d{1,3}(?:\\.\\d{3})*(?:,\\d{2})?|\\d+(?:,\\d{2})?';
+const NUMBER = '\\d{1,3}(?:\\.\\d{3})*(?:,\\d{1,2})?|\\d+(?:,\\d{1,2})?';
 const AMOUNT_RE = new RegExp(
   `(?:€|eur(?:os)?)\\s*(${NUMBER})|(${NUMBER})\\s*(?:€|eur(?:os)?)`,
   'g',

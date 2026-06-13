@@ -11,6 +11,10 @@ describe('extractAmount', () => {
     expect(extractAmount('Total 12 EUR')).toBe(12);
   });
 
+  it('parses a single-decimal amount without truncating it', () => {
+    expect(extractAmount('5,5 €')).toBe(5.5);
+  });
+
   it('returns undefined when there is no euro amount', () => {
     expect(extractAmount('sin importe en este documento')).toBeUndefined();
   });

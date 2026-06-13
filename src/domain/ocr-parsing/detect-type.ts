@@ -7,15 +7,15 @@ import { TYPE_KEYWORDS, keywordToRegExp } from './keywords';
  *  specific match wins (multi-word phrase > single word); ties break by table order. */
 export function detectType(text: string): DeadlineType | undefined {
   const norm = normalize(text);
-  let best: { type: DeadlineType; words: number; order: number } | undefined;
+  let best: { type: DeadlineType; words: number } | undefined;
 
-  TYPE_KEYWORDS.forEach((entry, order) => {
-    if (!keywordToRegExp(entry.keyword).test(norm)) return;
+  for (const entry of TYPE_KEYWORDS) {
+    if (!keywordToRegExp(entry.keyword).test(norm)) continue;
     const words = entry.keyword.split(' ').length;
     if (best === undefined || words > best.words) {
-      best = { type: entry.type, words, order };
+      best = { type: entry.type, words };
     }
-  });
+  }
 
   return best?.type;
 }
