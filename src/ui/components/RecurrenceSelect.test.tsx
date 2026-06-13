@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { RecurrenceSelect } from './RecurrenceSelect';
 
 describe('RecurrenceSelect', () => {
@@ -53,6 +53,6 @@ describe('RecurrenceSelect', () => {
     fireEvent.press(screen.getByText('Personalizado'));
     expect(await screen.findByTestId('recurrence-custom-input')).toBeTruthy();
     fireEvent.press(screen.getByText('Cada mes'));
-    expect(screen.queryByTestId('recurrence-custom-input')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('recurrence-custom-input')).toBeNull());
   });
 });
