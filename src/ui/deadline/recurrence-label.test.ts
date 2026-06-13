@@ -14,4 +14,8 @@ describe('recurrenceLabel', () => {
   it('labels other periods in months', () => {
     expect(recurrenceLabel(3)).toBe('Cada 3 meses');
   });
+  it('labels the long-cycle presets in whole years', () => {
+    expect(recurrenceLabel(60)).toBe('Cada 5 años');
+    expect(recurrenceLabel(120)).toBe('Cada 10 años');
+  });
 });
