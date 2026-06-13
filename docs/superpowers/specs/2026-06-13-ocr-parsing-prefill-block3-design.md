@@ -50,7 +50,7 @@ Partial<AddFormState>  ──► DeadlineForm initialValues  ──►  prefille
 // src/domain/ocr-parsing/deadline-hints.ts
 export interface DeadlineHints {
   type?: DeadlineType;   // only when a keyword matched with confidence
-  dueDate?: Date;        // local midnight (startOfDay), always a future date
+  dueDate?: Date;        // local midnight (startOfDay); always today-or-future (calendar)
   amount?: number;       // positive; only for INSURANCE / SUBSCRIPTION
 }
 ```
@@ -114,17 +114,27 @@ within `[now − 30y, now + 30y]`; discard outside. Each candidate keeps its cha
 
 ## Due-date selection (the iterative core)
 
+**"Future/valid" is a calendar-date comparison, not a timestamp comparison.** A candidate
+is future-or-current when `candidate.date >= startOfDay(now)` — i.e. compared by *day*,
+not by instant. Modeling it as `candidate.date > now` would wrongly drop a deadline due
+**today**: today's date is local midnight (00:00), which is `< now` (e.g. 14:30), so a
+legitimate due-today document (a receipt that expires today) would be discarded. The app
+already handles "today"/N=0, so this must stay consistent with `daysBetween`/urgency.
+
 Strategy — **label proximity by character window** (robust to how OCR splits lines):
 
 1. Locate expiry labels in the text: `validez`, `valido/válida hasta`, `caduca`,
-   `caducidad`, `vencimiento`, `vence`, `hasta`, `renovacion` (normalized).
+   `caducidad`, `vencimiento`, `vence`, `renovacion` (normalized). The bare `hasta` is
+   **excluded** v1 — too common ("hasta luego", "hasta el 50%", addresses) and prone to
+   pulling promotional dates; the phrase forms (`válido/válida hasta`) are the safe ones.
 2. For each label, take the nearest candidate **after** the label within a character
    window (covers same line + next line).
-3. Among label-associated candidates: prefer a **future** date (relative to `now`); if
-   several, the **latest**. → Resolves the hard DNI case (emission past + validity future
-   appear together → pick validity).
-4. No label match → same criterion over all candidates (future, latest).
-5. **No future candidate → empty** (decision B). Never emit a past date as a due date.
+3. Among label-associated candidates: prefer a **future-or-current** date
+   (`>= startOfDay(now)`); if several, the **latest**. → Resolves the hard DNI case
+   (emission past + validity future appear together → pick validity).
+4. No label match → same criterion over all candidates (future-or-current, latest).
+5. **No future-or-current candidate → empty** (decision B). Never emit a past date as a
+   due date.
 
 ## Amount
 
@@ -178,6 +188,9 @@ A table-driven test iterates the set. Fixtures:
   same format** (name, DNI number, support number); dates deterministic relative to the
   test clock (**validity future > emission past**). Real PII is never committed.
 - Synthetic-but-realistic: `itv`, `insurance`, `subscription`, `passport`.
+- **`due-today`**: a document whose expiry equals the test clock's day → `dueDate` must be
+  set (pins the calendar-date comparison; a timestamp comparison would drop it). The DNI
+  anchor does not exercise this (validity is years out).
 - `noise-only` → empty hints.
 
 Domain tests:
@@ -186,8 +199,9 @@ Domain tests:
   word-boundary (`gas` not in `gastos`); no match → `undefined`.
 - `extractDateCandidates`: each format; reject invalid (`32`, `13`) and overflow (`31/02`);
   plausibility window.
-- `selectDueDate`: label proximity; **DNI → validity, not emission**; future preference;
-  **no future → empty**; noise tolerance.
+- `selectDueDate`: label proximity; **DNI → validity, not emission**; future-or-current
+  preference; **due today is kept** (calendar `>= startOfDay(now)`, not timestamp `> now`,
+  even with `now` at 14:30); **no future-or-current → empty**; noise tolerance.
 - `extractAmount`: ES formats; gating by type; first-of-many.
 - `parseDeadlineHints`: table-driven per fixture; partials; never junk.
 
@@ -206,9 +220,11 @@ Verification: `npm test` (TZ=Europe/Madrid) green; `npm run typecheck` clean.
 - **A — Type with no confident match → `undefined`** (not explicit `OTHER`). Form stays
   on `OTHER` with empty title — identical to opening the blank manual form, the correct
   baseline. Prefilling `title="Otro"` only adds friction (user would delete it).
-- **B — No future date → empty `dueDate`.** A due date is by nature future; prefilling a
-  past date would be actively misleading and would pollute urgency/notifications. A wrong
-  date is worse than none.
+- **B — No future-or-current date → empty `dueDate`.** A due date is by nature
+  today-or-future; prefilling a past date would be actively misleading and would pollute
+  urgency/notifications. A wrong date is worse than none. "Future-or-current" is a
+  calendar-date test (`>= startOfDay(now)`) so a deadline due **today** is kept, not
+  dropped by a timestamp comparison.
 - **C — Multiple amounts → first plausible.** Discard "largest": in insurance the largest
   figure is usually the insured capital (e.g. 150.000,00), not the user's premium (e.g.
   263,38) — "largest" would be systematically wrong. "First" is predictable and testable;
