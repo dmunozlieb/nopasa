@@ -76,4 +76,20 @@ describe('useMergeImportedDeadlines', () => {
     expect(outcome.imported).toBe(1);
     expect(await repo.findById('a')).not.toBeNull();
   });
+
+  it('counts a duplicate id within one batch as already-existing (no double import)', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const { result } = await renderHook(() => useMergeImportedDeadlines(), {
+      wrapper: wrapperWith(repo, new FakeNotificationScheduler()),
+    });
+    await waitFor(() => expect(typeof result.current).toBe('function'));
+
+    const outcome = await result.current([
+      buildDeadline({ id: 'dup', title: 'First' }),
+      buildDeadline({ id: 'dup', title: 'Second' }),
+    ]);
+
+    expect(outcome).toEqual({ imported: 1, alreadyExisted: 1 });
+    expect((await repo.findById('dup'))?.title).toBe('First'); // first wins, not overwritten
+  });
 });

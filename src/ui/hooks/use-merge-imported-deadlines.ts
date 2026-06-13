@@ -30,6 +30,7 @@ export function useMergeImportedDeadlines(): (deadlines: Deadline[]) => Promise<
           continue;
         }
         await repository.save(deadline);
+        existing.add(deadline.id); // guard a hand-edited file with duplicate ids in one batch
         imported += 1;
         if (deadline.status === 'ACTIVE') {
           try {
