@@ -1,7 +1,7 @@
 # Recurrence — Design Spec
 
 Date: 2026-06-13
-Status: Approved (design); pending implementation plan
+Status: Approved (design, incl. review refinements); pending implementation plan
 
 ## Goal
 
@@ -57,6 +57,13 @@ verified without depending on Google verification.
 7. **Recurrence indicator only in the detail**: a subtle "Se repite cada
    [año/mes/N meses]" line next to the date. Home unchanged; a 🔁 badge on Home
    is a possible future addition.
+8. **No `nextOccurrence` wrapper** — `nextDueDate` (prefill) + the user-confirmed
+   date cover the flow; the wrapper would be dead code (YAGNI).
+9. **Robust "Personalizado" parsing** — positive integer only, reject
+   `0`/negative/non-numeric, sane upper cap; invalid → `undefined`.
+10. **"Dejar de repetir" requires a confirmation dialog** — semi-destructive and
+    irreversible (no history/edit flow); reuse the `SettingsScreen` destructive
+    pattern.
 
 ## Out of scope (v1)
 
@@ -80,9 +87,11 @@ DST-safe via local components, no dependencies:
   recurrenceMonths × k)`; advance `k` while the candidate is **strictly before**
   `startOfDay(now)` (a candidate equal to today is kept). `k` starts at 1, so the
   result is always at least one period after `dueDate`.
-- **`nextOccurrence(deadline: Deadline, now: Date): Deadline`** —
-  `{ ...deadline, dueDate: nextDueDate(deadline.dueDate, deadline.recurrenceMonths, now) }`.
-  Throws/guards if `recurrenceMonths` is undefined.
+
+No `nextOccurrence` wrapper: the renew flow uses `nextDueDate(...)` to prefill the
+picker, and `useRenewDeadline(deadline, confirmedDate)` builds the renewed
+deadline from the user-confirmed date — a `{ ...deadline, dueDate: nextDueDate }`
+wrapper would have no consumer (YAGNI).
 
 Exported from `src/domain/deadline/index.ts`.
 
@@ -106,6 +115,14 @@ not the domain — see component 4.
   (24) / **Personalizado** → reveals a numeric `TextInput` (N months). The active
   chip is derived from the value: a preset if it matches, "Personalizado" if
   defined outside presets, "No se repite" if `undefined`.
+- **Custom input validation**: parse to a **positive integer**; reject `0`,
+  negatives, and non-numeric (e.g. "abc", "-3") instead of letting them through
+  silently — an invalid/empty custom value resolves to `undefined` (no
+  recurrence), so it never reaches the form state as a bad number. Apply a sane
+  upper cap (e.g. 999 months) so absurd values can't be entered. A small pure
+  helper `parseRecurrenceMonths(raw): number | undefined` (mirrors `parseAmount`)
+  holds this logic and is unit-tested. The `> 0` gate in `toCreateInput` remains
+  as the persistence backstop.
 - `toCreateInput` includes `recurrenceMonths` when defined and `> 0` (same shape
   as the `photoUri` wiring).
 - `DeadlineForm` adds a `FormField "¿Se repite?"` hosting `RecurrenceSelect`.
@@ -116,6 +133,8 @@ not the domain — see component 4.
   (regression);
 - `RecurrenceSelect` component: selecting a preset reports the right months;
   "Personalizado" reveals the field and reports the typed N.
+- `parseRecurrenceMonths`: integers > 0 pass; `0`, negatives, non-numeric, and
+  empty → `undefined`; values above the cap are rejected/clamped.
 
 ### 3. Renew + reschedule — hook `useRenewDeadline`
 
@@ -147,9 +166,18 @@ does not throw.
     prefilled with `nextDueDate(...)` + **"Confirmar renovación"** /
     **"Cancelar"** (collapses). Confirm → `useRenewDeadline(deadline, chosenDate)`
     → close the detail (Home refreshes on-focus with the new date).
-  - "Dejar de repetir" → the existing `markAs` logic
+  - "Dejar de repetir" → **confirmation dialog first** (semi-destructive and
+    effectively irreversible: it leaves the active list and, with no history or
+    edit flow, the only way back is re-adding by hand; a mis-tap when the user
+    meant "renovada" loses the recurring deadline). Mirror the existing
+    destructive-confirm pattern (`SettingsScreen` "Borrar todos los datos":
+    `Alert.alert` with a `cancel` button + a `destructive` confirm `onPress`).
+    On confirm → the existing `markAs` logic
     (`presentation.manage.targetStatus`: RESOLVED/CANCELLED + cancel
-    notifications), i.e. stop forever (sold the car).
+    notifications), i.e. stop forever (sold the car). (Semantic aside: "dejar de
+    repetir" is closer to "cancelar" than "resolver", but since both leave the
+    active list and there is no history, reusing `targetStatus` is functionally
+    equivalent.)
   - Subtle indicator **"Se repite cada [X]"** next to the date, via a UI label
     helper `src/ui/deadline/recurrence-label.ts` (`recurrenceLabel(months)` →
     "Cada mes" / "Cada año" / "Cada 2 años" / "Cada N meses"). Pure, tested.
@@ -157,7 +185,9 @@ does not throw.
 **Tests** (fakes + clock):
 - renew flow: confirm → `dueDate` advanced + still `ACTIVE` + `cancel` and
   `schedule` invoked with the new plan;
-- "dejar de repetir" → status resolved/cancelled per type;
+- "dejar de repetir" → confirmation dialog shown; on confirm, status
+  resolved/cancelled per type + notifications cancelled; on cancel, nothing
+  changes (no `update`, no `cancel`);
 - non-recurrent → manage row unchanged (still "Marcar como [X]" + "Posponer el
   aviso"), no renew affordance;
 - `recurrence-label`: month → Spanish copy.
