@@ -23,3 +23,4 @@ export {
   type DeadlineGroup,
   type GroupedDeadlines,
 } from './grouping';
+export { addMonths, nextDueDate } from './recurrence';
