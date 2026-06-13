@@ -5,19 +5,24 @@ import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadlin
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
 import { InMemorySettingsRepository } from '../../test-support/in-memory-settings-repository';
 import { FakeDataExporter } from '../../test-support/fake-data-exporter';
+import { FakeDataImporter } from '../../test-support/fake-data-importer';
 import type { Clock } from '../../domain/deadline/deadline.factory';
+import type { DataImporter } from '../../ports/data-importer';
 import { RepositoryProvider } from '../repository/repository-context';
 import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
 import { DataExporterProvider } from '../export/data-exporter-context';
+import { DataImporterProvider } from '../import/data-importer-context';
 import { SettingsProvider } from '../settings/settings-context';
 import { SettingsScreen } from './SettingsScreen';
+import { buildDeadlineExport } from '../../domain/export/build-deadline-export';
 
 function renderScreen({
   repo = new InMemoryDeadlineRepository(),
   scheduler = new FakeNotificationScheduler(),
   settingsRepo = new InMemorySettingsRepository(),
   exporter = new FakeDataExporter(),
+  importer = new FakeDataImporter(),
   clock = { now: () => new Date(2026, 5, 10) } as Clock,
   onClose = () => {},
   onOpenPrivacy = () => {},
@@ -26,6 +31,7 @@ function renderScreen({
   scheduler?: FakeNotificationScheduler;
   settingsRepo?: InMemorySettingsRepository;
   exporter?: FakeDataExporter;
+  importer?: DataImporter;
   clock?: Clock;
   onClose?: () => void;
   onOpenPrivacy?: () => void;
@@ -35,9 +41,11 @@ function renderScreen({
       <DeadlineDepsProvider clock={clock}>
         <NotificationSchedulerProvider scheduler={scheduler}>
           <DataExporterProvider exporter={exporter}>
-            <SettingsProvider repository={settingsRepo}>
-              <SettingsScreen onClose={onClose} onOpenPrivacy={onOpenPrivacy} />
-            </SettingsProvider>
+            <DataImporterProvider importer={importer}>
+              <SettingsProvider repository={settingsRepo}>
+                <SettingsScreen onClose={onClose} onOpenPrivacy={onOpenPrivacy} />
+              </SettingsProvider>
+            </DataImporterProvider>
           </DataExporterProvider>
         </NotificationSchedulerProvider>
       </DeadlineDepsProvider>
@@ -130,5 +138,80 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Nopasa Premium')).toBeTruthy();
     expect(screen.getAllByText('Próximamente')).toHaveLength(3);
     expect(screen.getByText(/Versión/)).toBeTruthy();
+  });
+
+  it('imports a valid file after confirming and reports the result', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const exportJson = buildDeadlineExport(
+      [buildDeadline({ id: 'a' }), buildDeadline({ id: 'b' })],
+      { exportedAt: new Date(2026, 5, 10) },
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.text === 'Importar')?.onPress?.();
+    });
+    await renderScreen({ repo, importer: new FakeDataImporter(exportJson) });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(async () => expect(await repo.findById('a')).not.toBeNull());
+    expect(await repo.findById('b')).not.toBeNull();
+    expect(alertSpy).toHaveBeenCalledWith('Importación completada', 'Importados 2');
+    alertSpy.mockRestore();
+  });
+
+  it('does nothing when the picker is cancelled', async () => {
+    const repo = new InMemoryDeadlineRepository();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await renderScreen({ repo, importer: new FakeDataImporter(null) });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(() => expect(alertSpy).not.toHaveBeenCalled());
+    expect(await repo.list()).toHaveLength(0);
+    alertSpy.mockRestore();
+  });
+
+  it('shows a clear error for a file that is not a Nopasa copy', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await renderScreen({ importer: new FakeDataImporter('not json') });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('No se pudo importar', expect.stringContaining('copia de Nopasa')),
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('reports when no valid deadline could be read', async () => {
+    const json = JSON.stringify({ app: 'nopasa', schema: 1, deadlines: [{ nope: true }] });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await renderScreen({ importer: new FakeDataImporter(json) });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('No se pudo importar', 'No se pudo leer ningún vencimiento válido.'),
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('round-trips: a file produced by export imports back into the repo', async () => {
+    const source = new InMemoryDeadlineRepository([
+      buildDeadline({ id: 'rt1', title: 'ITV' }),
+      buildDeadline({ id: 'rt2', title: 'Seguro', status: 'RESOLVED' }),
+    ]);
+    const exportJson = buildDeadlineExport(await source.list(), { exportedAt: new Date(2026, 5, 10) });
+    const target = new InMemoryDeadlineRepository();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.text === 'Importar')?.onPress?.();
+    });
+    await renderScreen({ repo: target, importer: new FakeDataImporter(exportJson) });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(async () => expect(await target.findById('rt1')).not.toBeNull());
+    expect((await target.findById('rt2'))?.status).toBe('RESOLVED');
+    alertSpy.mockRestore();
   });
 });
