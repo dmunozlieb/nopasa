@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +12,10 @@ import { urgencyColors } from '../deadline/urgency-colors';
 import { useDeadline } from '../hooks/use-deadline';
 import { useDeadlineRepository } from '../repository/repository-context';
 import { useNotificationScheduler } from '../notification-scheduler/notification-scheduler-context';
+import { nextDueDate } from '../../domain/deadline/recurrence';
+import { recurrenceLabel } from '../deadline/recurrence-label';
+import { useRenewDeadline } from '../hooks/use-renew-deadline';
+import { DatePickerField } from '../components/DatePickerField';
 import { colors, fontSizes, radii, spacing } from '../theme';
 import { ActionButton } from '../components/ActionButton';
 import { AppText } from '../components/AppText';
@@ -29,6 +34,9 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
   const repo = useDeadlineRepository();
   const scheduler = useNotificationScheduler();
   const insets = useSafeAreaInsets();
+  const renew = useRenewDeadline();
+  const [renewing, setRenewing] = useState(false);
+  const [renewDate, setRenewDate] = useState<Date>(() => new Date());
 
   if (status === 'loading') return <Loading />;
 
@@ -66,6 +74,28 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
     onClose();
   };
 
+  const isRecurrent = deadline.recurrenceMonths != null;
+
+  const startRenew = () => {
+    setRenewDate(nextDueDate(deadline.dueDate, deadline.recurrenceMonths!, new Date()));
+    setRenewing(true);
+  };
+
+  const confirmRenew = async () => {
+    await renew(deadline, renewDate);
+    onClose();
+  };
+
+  const confirmStopRepeating = () =>
+    Alert.alert(
+      'Dejar de repetir',
+      'Este vencimiento dejará de renovarse y saldrá de tu lista. No se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Dejar de repetir', style: 'destructive', onPress: () => { void markAs(); } },
+      ],
+    );
+
   return (
     <View style={styles.root}>
       <View style={[styles.handle, { marginTop: insets.top + spacing.sm }]} />
@@ -97,6 +127,15 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
           consequence={presentation.consequence}
         />
 
+        {deadline.recurrenceMonths != null ? (
+          <View style={styles.recurrenceRow}>
+            <MaterialCommunityIcons name="calendar-refresh" size={16} color={colors.textFaint} />
+            <AppText weight="semibold" size={fontSizes.small} color={colors.textFaint}>
+              {`Se repite ${recurrenceLabel(deadline.recurrenceMonths).toLowerCase()}`}
+            </AppText>
+          </View>
+        ) : null}
+
         {amountLine ? (
           <View style={styles.amountRow}>
             <MaterialCommunityIcons name="cash" size={18} color={colors.textFaint} />
@@ -116,9 +155,31 @@ export function DeadlineDetailScreen({ id, onClose }: DeadlineDetailScreenProps)
 
         <View style={styles.manageDivider} />
         <View style={styles.manageRow}>
-          <ManageAction label={presentation.manage.label} icon="check" onPress={markAs} />
-          <ManageAction label="Posponer el aviso" icon="clock-outline" onPress={notYet} />
+          {isRecurrent ? (
+            <>
+              <ManageAction label="Marcar como renovada" icon="calendar-refresh" onPress={startRenew} />
+              <ManageAction label="Dejar de repetir" icon="close-circle-outline" onPress={confirmStopRepeating} />
+            </>
+          ) : (
+            <>
+              <ManageAction label={presentation.manage.label} icon="check" onPress={markAs} />
+              <ManageAction label="Posponer el aviso" icon="clock-outline" onPress={notYet} />
+            </>
+          )}
         </View>
+
+        {renewing ? (
+          <View style={styles.renewBox}>
+            <AppText weight="bold" size={fontSizes.label} color={colors.textSecondary}>
+              ¿Cuál es la nueva fecha?
+            </AppText>
+            <DatePickerField value={renewDate} onChange={setRenewDate} />
+            <View style={styles.renewActions}>
+              <ActionButton label="Confirmar renovación" icon="check" onPress={confirmRenew} variant="primary" />
+              <ManageAction label="Cancelar" icon="close" onPress={() => setRenewing(false)} />
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -139,4 +200,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl, backgroundColor: colors.screenBg },
   centeredText: { textAlign: 'center' },
   photo: { width: '100%', height: 200, borderRadius: radii.card, backgroundColor: colors.surfaceSoft },
+  recurrenceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  renewBox: { gap: spacing.md, padding: spacing.lg, borderRadius: radii.card, backgroundColor: colors.surfaceSoft },
+  renewActions: { gap: spacing.sm },
 });

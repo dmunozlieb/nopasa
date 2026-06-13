@@ -1,9 +1,13 @@
+import { Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { buildDeadline } from '../../test-support/build-deadline';
 import { InMemoryDeadlineRepository } from '../../test-support/in-memory-deadline-repository';
 import { FakeNotificationScheduler } from '../../test-support/fake-notification-scheduler';
+import { InMemorySettingsRepository } from '../../test-support/in-memory-settings-repository';
 import { RepositoryProvider } from '../repository/repository-context';
+import { DeadlineDepsProvider } from '../deadline-deps/deadline-deps-context';
 import { NotificationSchedulerProvider } from '../notification-scheduler/notification-scheduler-context';
+import { SettingsProvider } from '../settings/settings-context';
 import { DeadlineDetailScreen } from './DeadlineDetailScreen';
 
 function renderWith(
@@ -11,12 +15,17 @@ function renderWith(
   id: string,
   onClose: () => void = () => {},
   scheduler: FakeNotificationScheduler = new FakeNotificationScheduler(),
+  now: Date = new Date(2026, 5, 13),
 ) {
   return render(
     <RepositoryProvider repository={repo}>
-      <NotificationSchedulerProvider scheduler={scheduler}>
-        <DeadlineDetailScreen id={id} onClose={onClose} />
-      </NotificationSchedulerProvider>
+      <DeadlineDepsProvider generateId={() => 'x'} clock={{ now: () => now }}>
+        <NotificationSchedulerProvider scheduler={scheduler}>
+          <SettingsProvider repository={new InMemorySettingsRepository()}>
+            <DeadlineDetailScreen id={id} onClose={onClose} />
+          </SettingsProvider>
+        </NotificationSchedulerProvider>
+      </DeadlineDepsProvider>
     </RepositoryProvider>,
   );
 }
@@ -104,5 +113,81 @@ describe('DeadlineDetailScreen', () => {
     await renderWith(repo, '10');
     await screen.findByText('ITV — Clio');
     expect(screen.queryByTestId('deadline-detail-photo')).toBeNull();
+  });
+
+  it('a non-recurrent deadline keeps the standard manage row', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio' }),
+    ]);
+    await renderWith(repo, '1');
+    expect(await screen.findByText('Marcar como renovado')).toBeTruthy();
+    expect(screen.getByText('Posponer el aviso')).toBeTruthy();
+    expect(screen.queryByText('Marcar como renovada')).toBeNull();
+  });
+
+  it('a recurrent deadline shows renew + stop-repeating + the recurrence indicator', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio', recurrenceMonths: 12 }),
+    ]);
+    await renderWith(repo, '1');
+    expect(await screen.findByText('Marcar como renovada')).toBeTruthy();
+    expect(screen.getByText('Dejar de repetir')).toBeTruthy();
+    expect(screen.getByText('Se repite cada año')).toBeTruthy();
+    expect(screen.queryByText('Posponer el aviso')).toBeNull();
+  });
+
+  it('renews a recurrent deadline: advances the date, stays ACTIVE, reschedules and closes', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio', dueDate: new Date(2026, 5, 8), recurrenceMonths: 12, reminderDaysBefore: [7], status: 'ACTIVE' }),
+    ]);
+    const onClose = jest.fn();
+    const scheduler = new FakeNotificationScheduler();
+    await renderWith(repo, '1', onClose, scheduler);
+
+    fireEvent.press(await screen.findByText('Marcar como renovada'));
+    fireEvent.press(await screen.findByText('Confirmar renovación'));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    const saved = await repo.findById('1');
+    expect(saved?.dueDate).toEqual(new Date(2027, 5, 8)); // nextDueDate(2026-06-08, 12, 2026-06-13)
+    expect(saved?.status).toBe('ACTIVE');
+    expect(scheduler.cancelled).toEqual(['1']);
+    expect(scheduler.scheduled.has('1')).toBe(true);
+  });
+
+  it('stops repeating after confirming the destructive dialog', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio', recurrenceMonths: 12, status: 'ACTIVE' }),
+    ]);
+    const onClose = jest.fn();
+    const scheduler = new FakeNotificationScheduler();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+    });
+    await renderWith(repo, '1', onClose, scheduler);
+
+    fireEvent.press(await screen.findByText('Dejar de repetir'));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect((await repo.findById('1'))?.status).toBe('RESOLVED');
+    expect(scheduler.cancelled).toEqual(['1']);
+    alertSpy.mockRestore();
+  });
+
+  it('does nothing when the stop-repeating dialog is cancelled', async () => {
+    const repo = new InMemoryDeadlineRepository([
+      buildDeadline({ id: '1', type: 'ITV', title: 'ITV — Clio', recurrenceMonths: 12, status: 'ACTIVE' }),
+    ]);
+    const onClose = jest.fn();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.style === 'cancel')?.onPress?.();
+    });
+    await renderWith(repo, '1', onClose);
+
+    fireEvent.press(await screen.findByText('Dejar de repetir'));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect((await repo.findById('1'))?.status).toBe('ACTIVE');
+    alertSpy.mockRestore();
   });
 });
