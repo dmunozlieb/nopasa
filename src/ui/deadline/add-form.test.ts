@@ -1,4 +1,4 @@
-import { parseAmount, toCreateInput, validateAddForm, type AddFormState } from './add-form';
+import { parseAmount, parseRecurrenceMonths, toCreateInput, validateAddForm, type AddFormState } from './add-form';
 
 function baseState(overrides: Partial<AddFormState> = {}): AddFormState {
   return {
@@ -41,6 +41,21 @@ describe('parseAmount', () => {
   });
 });
 
+describe('parseRecurrenceMonths', () => {
+  it('parses a positive integer', () => {
+    expect(parseRecurrenceMonths('3')).toBe(3);
+  });
+  it('returns undefined for empty, non-numeric, zero, negative, fractional or over-cap', () => {
+    expect(parseRecurrenceMonths('')).toBeUndefined();
+    expect(parseRecurrenceMonths('  ')).toBeUndefined();
+    expect(parseRecurrenceMonths('abc')).toBeUndefined();
+    expect(parseRecurrenceMonths('0')).toBeUndefined();
+    expect(parseRecurrenceMonths('-3')).toBeUndefined();
+    expect(parseRecurrenceMonths('1.5')).toBeUndefined();
+    expect(parseRecurrenceMonths('1000')).toBeUndefined();
+  });
+});
+
 describe('toCreateInput', () => {
   it('maps a valid state to a CreateDeadlineInput', () => {
     const input = toCreateInput(
@@ -73,5 +88,15 @@ describe('toCreateInput', () => {
   it('omits photoUri from the output when not provided', () => {
     const input = toCreateInput(baseState());
     expect('photoUri' in input).toBe(false);
+  });
+
+  it('includes recurrenceMonths when set', () => {
+    const input = toCreateInput(baseState({ recurrenceMonths: 12 }));
+    expect(input.recurrenceMonths).toBe(12);
+  });
+
+  it('omits recurrenceMonths when undefined', () => {
+    const input = toCreateInput(baseState());
+    expect('recurrenceMonths' in input).toBe(false);
   });
 });
