@@ -14,7 +14,7 @@ function renderForm(opts: {
   repo: InMemoryDeadlineRepository;
   photoStore?: FakePhotoStore;
   photoUri?: string;
-  onClose?: () => void;
+  onSaved?: () => void;
 }) {
   const photoStore = opts.photoStore ?? new FakePhotoStore();
   return render(
@@ -23,7 +23,7 @@ function renderForm(opts: {
         <NotificationSchedulerProvider scheduler={new FakeNotificationScheduler()}>
           <PhotoStoreProvider store={photoStore}>
             <SettingsProvider repository={new InMemorySettingsRepository()}>
-              <DeadlineForm heading="Confirma los datos" photoUri={opts.photoUri} onClose={opts.onClose ?? (() => {})} />
+              <DeadlineForm heading="Confirma los datos" photoUri={opts.photoUri} onSaved={opts.onSaved ?? (() => {})} />
             </SettingsProvider>
           </PhotoStoreProvider>
         </NotificationSchedulerProvider>
@@ -42,14 +42,14 @@ describe('DeadlineForm', () => {
   it('persists the photo on save and stores the STABLE uri, then closes', async () => {
     const repo = new InMemoryDeadlineRepository();
     const photoStore = new FakePhotoStore();
-    const onClose = jest.fn();
-    await renderForm({ repo, photoStore, photoUri: 'file:///cache/cam.jpg', onClose });
+    const onSaved = jest.fn();
+    await renderForm({ repo, photoStore, photoUri: 'file:///cache/cam.jpg', onSaved });
 
     fireEvent.changeText(await screen.findByPlaceholderText('Ej. ITV del coche'), 'ITV del coche');
     await screen.findByDisplayValue('ITV del coche');
     fireEvent.press(screen.getByText('Guardar'));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(photoStore.persisted).toEqual(['file:///cache/cam.jpg']);
     const saved = await repo.findById('fixed-id');
     expect(saved?.photoUri).toBe('stable:///0.jpg');

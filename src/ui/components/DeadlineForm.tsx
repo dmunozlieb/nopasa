@@ -25,11 +25,11 @@ interface DeadlineFormProps {
   heading: string;
   photoUri?: string;
   initialValues?: Partial<AddFormState>;
-  onClose: () => void;
+  onSaved: () => void;
 }
 
 /** Shared deadline form used by AddDeadlineScreen and the photo-confirm flow. */
-export function DeadlineForm({ heading, photoUri, initialValues, onClose }: DeadlineFormProps) {
+export function DeadlineForm({ heading, photoUri, initialValues, onSaved }: DeadlineFormProps) {
   const deps = useDeadlineDeps();
   const { settings } = useSettings();
   const createDeadline = useCreateDeadline();
@@ -78,7 +78,7 @@ export function DeadlineForm({ heading, photoUri, initialValues, onClose }: Dead
     try {
       const stableUri = photoUri ? await photoStore.persist(photoUri) : undefined;
       await createDeadline(toCreateInput(state, stableUri));
-      onClose();
+      onSaved();
     } catch {
       submitting.current = false;
       Alert.alert('No se pudo guardar', 'Inténtalo de nuevo.');

@@ -15,7 +15,7 @@ const OCR_TIMEOUT_MS = 8000;
 
 interface ConfirmDeadlineScreenProps {
   photoUri: string;
-  onClose: () => void;
+  onSaved: () => void;
   /** OCR deadline in ms; injectable for tests. Defaults to OCR_TIMEOUT_MS. */
   timeoutMs?: number;
 }
@@ -28,7 +28,7 @@ interface ConfirmDeadlineScreenProps {
  * the parsed values must be ready beforehand. OCR failure/timeout/empty leaves
  * initialValues empty — the manual path is never blocked.
  */
-export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEOUT_MS }: ConfirmDeadlineScreenProps) {
+export function ConfirmDeadlineScreen({ photoUri, onSaved, timeoutMs = OCR_TIMEOUT_MS }: ConfirmDeadlineScreenProps) {
   const recognizer = useTextRecognizer();
   const { clock } = useDeadlineDeps();
   const insets = useSafeAreaInsets();
@@ -72,7 +72,7 @@ export function ConfirmDeadlineScreen({ photoUri, onClose, timeoutMs = OCR_TIMEO
 
   return (
     <View style={styles.container}>
-      <DeadlineForm heading="Confirma los datos" photoUri={photoUri} initialValues={initialValues} onClose={onClose} />
+      <DeadlineForm heading="Confirma los datos" photoUri={photoUri} initialValues={initialValues} onSaved={onSaved} />
     </View>
   );
 }

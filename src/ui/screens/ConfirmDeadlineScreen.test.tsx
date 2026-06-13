@@ -18,12 +18,12 @@ async function renderConfirm(opts: {
   photoStore?: FakePhotoStore;
   recognizer?: TextRecognizer;
   timeoutMs?: number;
-  onClose?: () => void;
+  onSaved?: () => void;
 }) {
   const repo = opts.repo ?? new InMemoryDeadlineRepository();
   const photoStore = opts.photoStore ?? new FakePhotoStore();
   const recognizer = opts.recognizer ?? new FakeTextRecognizer();
-  const onClose = opts.onClose ?? (() => {});
+  const onSaved = opts.onSaved ?? (() => {});
   const result = await render(
     <RepositoryProvider repository={repo}>
       <DeadlineDepsProvider generateId={() => 'fixed-id'} clock={{ now: () => new Date(2026, 5, 8) }}>
@@ -31,7 +31,7 @@ async function renderConfirm(opts: {
           <PhotoStoreProvider store={photoStore}>
             <TextRecognizerProvider recognizer={recognizer}>
               <SettingsProvider repository={new InMemorySettingsRepository()}>
-                <ConfirmDeadlineScreen photoUri="file:///cache/cam.jpg" onClose={onClose} timeoutMs={opts.timeoutMs} />
+                <ConfirmDeadlineScreen photoUri="file:///cache/cam.jpg" onSaved={onSaved} timeoutMs={opts.timeoutMs} />
               </SettingsProvider>
             </TextRecognizerProvider>
           </PhotoStoreProvider>
@@ -58,15 +58,15 @@ describe('ConfirmDeadlineScreen', () => {
   });
 
   it('still shows the thumbnail and saves with the stable photoUri (Block 1 regression)', async () => {
-    const onClose = jest.fn();
-    const { repo } = await renderConfirm({ recognizer: recognized({ text: 'x', lines: ['x'] }), onClose });
+    const onSaved = jest.fn();
+    const { repo } = await renderConfirm({ recognizer: recognized({ text: 'x', lines: ['x'] }), onSaved });
 
     expect(await screen.findByTestId('deadline-photo-thumbnail')).toBeTruthy();
     fireEvent.changeText(await screen.findByPlaceholderText('Ej. ITV del coche'), 'ITV del coche');
     await screen.findByDisplayValue('ITV del coche');
     fireEvent.press(screen.getByText('Guardar'));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect((await repo.findById('fixed-id'))?.photoUri).toBe('stable:///0.jpg');
   });
 
@@ -77,15 +77,15 @@ describe('ConfirmDeadlineScreen', () => {
   });
 
   it('renders the form and allows manual save when OCR fails (best-effort)', async () => {
-    const onClose = jest.fn();
+    const onSaved = jest.fn();
     const recognizer = new FakeTextRecognizer({ error: new Error('ocr failed') });
-    const { repo } = await renderConfirm({ recognizer, onClose });
+    const { repo } = await renderConfirm({ recognizer, onSaved });
 
     fireEvent.changeText(await screen.findByPlaceholderText('Ej. ITV del coche'), 'Manual');
     await screen.findByDisplayValue('Manual');
     fireEvent.press(screen.getByText('Guardar'));
 
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(await repo.findById('fixed-id')).not.toBeNull();
   });
 
