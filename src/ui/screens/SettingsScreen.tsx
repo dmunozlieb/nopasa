@@ -10,6 +10,7 @@ import { useDeadlineDeps } from '../deadline-deps/deadline-deps-context';
 import { useDataExporter } from '../export/data-exporter-context';
 import { useDataImporter } from '../import/data-importer-context';
 import { useMergeImportedDeadlines } from '../hooks/use-merge-imported-deadlines';
+import type { Deadline } from '../../domain/deadline/deadline.schema';
 import { buildDeadlineExport } from '../../domain/export/build-deadline-export';
 import { exportFilename } from '../../domain/export/export-filename';
 import { parseDeadlineImport } from '../../domain/import/parse-deadline-import';
@@ -66,6 +67,15 @@ export function SettingsScreen({ onClose, onOpenPrivacy }: SettingsScreenProps) 
     }
   };
 
+  const runImport = async (deadlines: Deadline[], invalidCount: number) => {
+    try {
+      const { imported, alreadyExisted } = await mergeImported(deadlines);
+      Alert.alert('Importación completada', importResultMessage({ imported, alreadyExisted, invalidCount }));
+    } catch {
+      Alert.alert('No se pudo importar', 'Inténtalo de nuevo.');
+    }
+  };
+
   const importData = async () => {
     let text: string | null;
     try {
@@ -91,16 +101,7 @@ export function SettingsScreen({ onClose, onOpenPrivacy }: SettingsScreenProps) 
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Importar',
-        onPress: () => {
-          void (async () => {
-            try {
-              const { imported, alreadyExisted } = await mergeImported(deadlines);
-              Alert.alert('Importación completada', importResultMessage({ imported, alreadyExisted, invalidCount }));
-            } catch {
-              Alert.alert('No se pudo importar', 'Inténtalo de nuevo.');
-            }
-          })();
-        },
+        onPress: () => { void runImport(deadlines, invalidCount); },
       },
     ]);
   };

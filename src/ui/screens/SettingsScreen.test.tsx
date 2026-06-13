@@ -183,6 +183,19 @@ describe('SettingsScreen', () => {
     alertSpy.mockRestore();
   });
 
+  it('reports when the file has no deadlines at all', async () => {
+    const json = JSON.stringify({ app: 'nopasa', schema: 1, deadlines: [] });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await renderScreen({ importer: new FakeDataImporter(json) });
+
+    fireEvent.press(await screen.findByText('Importar mis datos'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('No se pudo importar', 'El archivo no contiene vencimientos.'),
+    );
+    alertSpy.mockRestore();
+  });
+
   it('reports when no valid deadline could be read', async () => {
     const json = JSON.stringify({ app: 'nopasa', schema: 1, deadlines: [{ nope: true }] });
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
