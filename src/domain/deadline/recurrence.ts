@@ -20,6 +20,9 @@ export function addMonths(date: Date, months: number): Date {
  * recurrenceMonths × k)` for k = 1, 2, 3…, advancing while the candidate is
  * strictly before today (a candidate equal to today is kept). k starts at 1, so
  * the result is always at least one full period after dueDate.
+ *
+ * Precondition: recurrenceMonths must be a positive integer (the domain schema and
+ * the form parser both guarantee this). A value <= 0 would make the loop spin forever.
  */
 export function nextDueDate(dueDate: Date, recurrenceMonths: number, now: Date): Date {
   const floor = startOfDay(now).getTime();
