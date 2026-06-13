@@ -17,9 +17,9 @@ describe('RecurrenceSelect', () => {
     const onChange = jest.fn();
     await render(<RecurrenceSelect value={undefined} onChange={onChange} />);
     fireEvent.press(screen.getByText('Cada 5 años'));
-    expect(onChange).toHaveBeenLastCalledWith(60);
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(60));
     fireEvent.press(screen.getByText('Cada 10 años'));
-    expect(onChange).toHaveBeenLastCalledWith(120);
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(120));
   });
 
   it('reports the months for a short preset', async () => {
@@ -51,9 +51,9 @@ describe('RecurrenceSelect', () => {
     fireEvent.press(screen.getByText('Personalizado'));
     const input = await screen.findByTestId('recurrence-custom-input');
     fireEvent.changeText(input, '3'); // years → 36
-    expect(onChange).toHaveBeenLastCalledWith(36);
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(36));
     fireEvent.press(screen.getByText('meses'));
-    expect(onChange).toHaveBeenLastCalledWith(3); // months → 3
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(3)); // months → 3
   });
 
   it('reports undefined for invalid custom input', async () => {
