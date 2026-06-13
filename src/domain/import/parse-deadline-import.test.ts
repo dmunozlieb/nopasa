@@ -54,4 +54,20 @@ describe('parseDeadlineImport', () => {
     expect(deadlines.map((d) => d.id)).toEqual(['ok']);
     expect(invalidCount).toBe(2);
   });
+
+  it('accepts a valid empty Nopasa export', () => {
+    const json = JSON.stringify({ app: 'nopasa', schema: 1, deadlines: [] });
+    expect(parseDeadlineImport(json)).toEqual({ deadlines: [], invalidCount: 0 });
+  });
+
+  it('ignores unknown fields on an otherwise-valid entry', () => {
+    const entry = { ...JSON.parse(JSON.stringify(buildDeadline({ id: 'ok' }))), surprise: 'extra' };
+    const json = JSON.stringify({ app: 'nopasa', schema: 1, deadlines: [entry] });
+
+    const { deadlines, invalidCount } = parseDeadlineImport(json);
+
+    expect(invalidCount).toBe(0);
+    expect(deadlines.map((d) => d.id)).toEqual(['ok']);
+    expect('surprise' in deadlines[0]).toBe(false);
+  });
 });
