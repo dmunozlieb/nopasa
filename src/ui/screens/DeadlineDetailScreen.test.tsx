@@ -151,6 +151,7 @@ describe('DeadlineDetailScreen', () => {
     const saved = await repo.findById('1');
     expect(saved?.dueDate).toEqual(new Date(2027, 5, 8)); // nextDueDate(2026-06-08, 12, 2026-06-13)
     expect(saved?.status).toBe('ACTIVE');
+    expect(saved?.recurrenceMonths).toBe(12); // stays recurrent so it can renew again next cycle
     expect(scheduler.cancelled).toEqual(['1']);
     expect(scheduler.scheduled.has('1')).toBe(true);
   });
